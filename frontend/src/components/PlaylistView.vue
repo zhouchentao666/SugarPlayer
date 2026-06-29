@@ -1,0 +1,201 @@
+<script lang="ts" setup>
+import { toRaw, computed } from 'vue'
+import type { Playlist, Song } from '../types'
+import { usePlaylistView } from '../composables/usePlaylistView'
+import PlaylistViewToolbar from './PlaylistViewToolbar.vue'
+import PlaylistViewList from './PlaylistViewList.vue'
+import PlaylistViewGrid from './PlaylistViewGrid.vue'
+import PlaylistBatchBar from './PlaylistBatchBar.vue'
+
+const props = defineProps<{
+  playlist: Playlist
+  playlists: Playlist[]
+  currentSong: Song | null
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:playlist', playlist: Playlist): void
+  (e: 'add-music-files'): void
+  (e: 'add-music-folder'): void
+  (e: 'play-song', index: number): void
+  (e: 'add-to-playlist', playlistId: string, songs: Song[]): void
+  (e: 'replace-to-playlist', playlistId: string, songs: Song[]): void
+}>()
+
+const {
+  searchQuery,
+  sortMode,
+  viewMode,
+  batchMode,
+  selectedIds,
+  displaySongs,
+  selectedSongs,
+  allSelected,
+  sortLabels,
+  toggleSelection,
+  selectAll,
+  clearSelection,
+  exitBatchMode,
+} = usePlaylistView(computed(() => props.playlist))
+
+function removeSong(id: string) {
+  const songs = props.playlist.songs.filter(song => song.id !== id)
+  emit('update:playlist', { ...props.playlist, songs })
+}
+
+function removeSelected() {
+  const ids = new Set(selectedIds.value)
+  const songs = props.playlist.songs.filter(song => !ids.has(song.id))
+  emit('update:playlist', { ...props.playlist, songs })
+  clearSelection()
+}
+
+function playSong(song: Song) {
+  const index = props.playlist.songs.findIndex(s => s.id === song.id)
+  if (index >= 0) emit('play-song', index)
+}
+
+function handleSelectAll() {
+  if (allSelected.value) clearSelection()
+  else selectAll()
+}
+
+function handleAddToPlaylist(playlistId: string) {
+  emit('add-to-playlist', playlistId, toRaw(selectedSongs.value))
+  exitBatchMode()
+}
+
+function handleReplaceToPlaylist(playlistId: string) {
+  emit('replace-to-playlist', playlistId, toRaw(selectedSongs.value))
+  exitBatchMode()
+}
+</script>
+
+<template>
+  <div class="playlist-view">
+    <header class="playlist-header">
+      <div class="playlist-title">
+        <h1>{{ props.playlist.name }}</h1>
+        <span class="song-count">{{ props.playlist.songs.length }} 首歌曲</span>
+      </div>
+      <div class="playlist-actions">
+        <button class="action-button" @click="emit('add-music-files')">
+          <span class="icon">+</span>
+          <span>添加音乐</span>
+        </button>
+        <button class="action-button" @click="emit('add-music-folder')">
+          <span class="icon">📁</span>
+          <span>文件夹</span>
+        </button>
+        <PlaylistViewToolbar
+          v-model:search-query="searchQuery"
+          v-model:sort-mode="sortMode"
+          v-model:view-mode="viewMode"
+          :batch-mode="batchMode"
+          :sort-labels="sortLabels"
+          @toggle-batch="batchMode = !batchMode"
+        />
+      </div>
+    </header>
+
+    <PlaylistViewList
+      v-if="viewMode === 'list'"
+      :songs="displaySongs"
+      :current-song="props.currentSong"
+      :selected-ids="selectedIds"
+      :batch-mode="batchMode"
+      @play="playSong"
+      @toggle="toggleSelection"
+      @remove="removeSong"
+    />
+    <PlaylistViewGrid
+      v-else
+      :songs="displaySongs"
+      :current-song="props.currentSong"
+      :selected-ids="selectedIds"
+      :batch-mode="batchMode"
+      @play="playSong"
+      @toggle="toggleSelection"
+      @remove="removeSong"
+    />
+
+    <PlaylistBatchBar
+      v-if="batchMode"
+      :selected-songs="selectedSongs"
+      :playlists="props.playlists"
+      :current-playlist-id="props.playlist.id"
+      @remove="removeSelected"
+      @add-to-playlist="handleAddToPlaylist"
+      @replace-to-playlist="handleReplaceToPlaylist"
+      @select-all="handleSelectAll"
+      @clear-selection="clearSelection"
+      @close="exitBatchMode"
+    />
+  </div>
+</template>
+
+<style scoped>
+.playlist-view {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: var(--fluent-text);
+  overflow: hidden;
+}
+
+.playlist-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--fluent-border);
+}
+
+.playlist-title {
+  min-width: 0;
+}
+
+.playlist-title h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.song-count {
+  font-size: 12px;
+  color: var(--fluent-text-secondary);
+}
+
+.playlist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--fluent-bg-hover);
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.action-button:hover {
+  background: var(--fluent-bg-active);
+}
+
+.action-button .icon {
+  font-size: 14px;
+}
+</style>

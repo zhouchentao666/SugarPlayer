@@ -1,0 +1,69 @@
+import { ref, watch, type Ref } from 'vue'
+import { SaveConfig, LoadConfig } from '../../bindings/sugarplayer/app'
+import { type Playlist } from '../types'
+
+export type WindowEffect = 'none' | 'acrylic' | 'custom-image' | 'song-color'
+
+export interface AppSettings {
+  theme: 'system' | 'light' | 'dark'
+  accentColor: string
+  quality: 'standard' | 'high' | 'lossless'
+  autoplay: boolean
+  windowEffect: WindowEffect
+  customImagePath: string
+  customImageOpacity: number
+  customImageBlur: number
+  songColorOpacity: number
+  songColorBlur: number
+}
+
+export function useConfig(
+  playlists: Ref<Playlist[]>,
+  settings: Ref<AppSettings>,
+  isLoading: Ref<boolean>
+) {
+  function buildConfig() {
+    return {
+      playlists: playlists.value,
+      settings: settings.value,
+    }
+  }
+
+  async function save() {
+    if (isLoading.value) return
+    await SaveConfig(buildConfig())
+  }
+
+  async function load() {
+    try {
+      const config = await LoadConfig()
+      if (config.playlists && config.playlists.length > 0) {
+        playlists.value = config.playlists as Playlist[]
+      }
+      if (config.settings) {
+        const hasEffect = Boolean(config.settings.windowEffect)
+        settings.value = {
+          theme: (config.settings.theme as AppSettings['theme']) || 'system',
+          accentColor: config.settings.accentColor || '#0078d4',
+          quality: (config.settings.quality as AppSettings['quality']) || 'standard',
+          autoplay: config.settings.autoplay ?? false,
+          windowEffect: (config.settings.windowEffect as WindowEffect) || 'acrylic',
+          customImagePath: config.settings.customImagePath || '',
+          customImageOpacity: hasEffect ? (config.settings.customImageOpacity ?? 35) : 35,
+          customImageBlur: hasEffect ? (config.settings.customImageBlur ?? 20) : 20,
+          songColorOpacity: hasEffect ? (config.settings.songColorOpacity ?? 45) : 45,
+          songColorBlur: hasEffect ? (config.settings.songColorBlur ?? 30) : 30,
+        }
+      }
+    } catch {
+      // 首次启动没有配置文件
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  watch(playlists, save, { deep: true })
+  watch(settings, save, { deep: true })
+
+  return { save, load }
+}

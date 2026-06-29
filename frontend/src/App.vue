@@ -1,0 +1,295 @@
+<script lang="ts" setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Events } from '@wailsio/runtime'
+import TitleBar from './components/TitleBar.vue'
+import Sidebar from './components/Sidebar.vue'
+import Settings from './components/Settings.vue'
+import PlaylistView from './components/PlaylistView.vue'
+import PlayerFooter from './components/PlayerFooter.vue'
+import PlayerDetail from './components/player/PlayerDetail.vue'
+import { useAudioPlayer } from './composables/useAudioPlayer'
+import { usePlaylists } from './composables/usePlaylists'
+import { useConfig, type AppSettings } from './composables/useConfig'
+import { useLyrics } from './composables/useLyrics'
+import { useWindowEffect } from './composables/useWindowEffect'
+import PlayQueue from './components/player/PlayQueue.vue'
+import type { PlayMode } from './components/player/PlayerControls.vue'
+import type { Song } from './types'
+
+const view = ref<'main' | 'settings'>('main')
+const isLoading = ref(true)
+const audioRef = ref<HTMLAudioElement | null>(null)
+const showPlayerDetail = ref(false)
+const showQueue = ref(false)
+const playMode = ref<PlayMode>('sequential')
+const settings = ref<AppSettings>({
+  theme: 'system',
+  accentColor: '#0078d4',
+  quality: 'standard',
+  autoplay: false,
+  windowEffect: 'acrylic',
+  customImagePath: '',
+  customImageOpacity: 35,
+  customImageBlur: 20,
+  songColorOpacity: 45,
+  songColorBlur: 30,
+})
+
+const { playlists, selectedId, updatePlaylists, updatePlaylist, selectPlaylist, addMusicFiles, addMusicFolder, refreshFolder, rewatchFolders, addSongs, replaceSongs } = usePlaylists()
+const currentPlaylist = computed(() => playlists.value.find(p => p.id === selectedId.value))
+
+const { save, load } = useConfig(playlists, settings, isLoading)
+
+const audio = useAudioPlayer({
+  audioRef,
+  onEnded: playNext,
+})
+
+const lyrics = useLyrics(audio.currentSong)
+const { appStyle, layerStyle } = useWindowEffect(settings, audio.coverUrl)
+
+const lyricTime = computed(() => Math.floor(audio.currentTime.value * 1000))
+
+function pickRandomIndex(current: number, count: number): number {
+  if (count <= 1) return 0
+  let nextIndex = current
+  do { nextIndex = Math.floor(Math.random() * count) } while (nextIndex === current)
+  return nextIndex
+}
+
+function playNext() {
+  if (!audio.playlistId.value) return
+  const playlist = playlists.value.find(p => p.id === audio.playlistId.value)
+  if (!playlist || playlist.songs.length === 0) return
+  const count = playlist.songs.length
+  const current = audio.index.value
+
+  if (playMode.value === 'stop') return
+
+  let nextIndex = current
+  if (playMode.value === 'shuffle') {
+    nextIndex = pickRandomIndex(current, count)
+  } else if (playMode.value === 'single') {
+    nextIndex = current
+  } else if (playMode.value === 'reverse') {
+    nextIndex = current - 1
+    if (nextIndex < 0) nextIndex = count - 1
+  } else {
+    nextIndex = current + 1
+    if (nextIndex >= count) nextIndex = 0
+  }
+  playSong(audio.playlistId.value, nextIndex)
+}
+
+function playPrev() {
+  if (!audio.playlistId.value) return
+  const playlist = playlists.value.find(p => p.id === audio.playlistId.value)
+  if (!playlist || playlist.songs.length === 0) return
+  const count = playlist.songs.length
+  const current = audio.index.value
+
+  let prevIndex = current
+  if (playMode.value === 'shuffle') {
+    prevIndex = pickRandomIndex(current, count)
+  } else if (playMode.value === 'single') {
+    prevIndex = current
+  } else if (playMode.value === 'reverse') {
+    prevIndex = current + 1
+    if (prevIndex >= count) prevIndex = 0
+  } else {
+    prevIndex = current - 1
+    if (prevIndex < 0) prevIndex = count - 1
+  }
+  playSong(audio.playlistId.value, prevIndex)
+}
+
+function playSong(playlistId: string, index: number) {
+  const playlist = playlists.value.find(p => p.id === playlistId)
+  if (!playlist || index < 0 || index >= playlist.songs.length) return
+  audio.play(playlistId, index, playlist.songs[index])
+}
+
+function playCurrentSong(index: number) {
+  if (!currentPlaylist.value) return
+  playSong(currentPlaylist.value.id, index)
+}
+
+function handleAddMusicFiles() {
+  if (!currentPlaylist.value) return
+  addMusicFiles(currentPlaylist.value.id)
+}
+
+function handleAddMusicFolder() {
+  if (!currentPlaylist.value) return
+  addMusicFolder(currentPlaylist.value.id)
+}
+
+function handleAddToPlaylist(playlistId: string, songs: Song[]) {
+  addSongs(playlistId, songs)
+}
+
+function handleReplaceToPlaylist(playlistId: string, songs: Song[]) {
+  replaceSongs(playlistId, songs)
+}
+
+function handleTogglePlay() {
+  if (!audio.currentSong.value && currentPlaylist.value?.songs.length) {
+    playSong(currentPlaylist.value.id, 0)
+    return
+  }
+  audio.togglePlay()
+}
+
+function updateSettings(newSettings: AppSettings) {
+  settings.value = { ...newSettings }
+}
+
+function onSelectPlaylist(id: string) {
+  selectPlaylist(id)
+  view.value = 'main'
+}
+
+function togglePlayerDetail() {
+  showPlayerDetail.value = !showPlayerDetail.value
+}
+
+function cyclePlayMode() {
+  const modes: PlayMode[] = ['sequential', 'single', 'reverse', 'stop', 'shuffle']
+  playMode.value = modes[(modes.indexOf(playMode.value) + 1) % modes.length]
+}
+
+function toggleQueue() {
+  showQueue.value = !showQueue.value
+}
+
+let offFolderChanged: (() => void) | null = null
+
+onMounted(async () => {
+  await load()
+  await rewatchFolders()
+  offFolderChanged = Events.On('folder:changed', (event: any) => {
+    refreshFolder(event.data)
+  })
+})
+
+onUnmounted(() => {
+  offFolderChanged?.()
+  Events.Off('folder:changed')
+})
+</script>
+
+<template>
+  <div
+    class="glass"
+    :data-theme="settings.theme"
+    :style="appStyle"
+  >
+    <div
+      v-if="layerStyle"
+      class="window-bg-layer"
+      :style="layerStyle"
+    ></div>
+    <TitleBar />
+    <div class="content">
+      <Sidebar
+        :playlists="playlists"
+        :selected-id="selectedId"
+        :active-view="view"
+        @update:playlists="updatePlaylists"
+        @update:selected-id="selectedId = $event"
+        @open-settings="view = 'settings'"
+        @select="onSelectPlaylist"
+      />
+      <main class="main">
+        <PlaylistView
+          v-if="view === 'main' && currentPlaylist"
+          :playlist="currentPlaylist"
+          :playlists="playlists"
+          :current-song="audio.currentSong.value"
+          @update:playlist="updatePlaylist"
+          @add-music-files="handleAddMusicFiles"
+          @add-music-folder="handleAddMusicFolder"
+          @play-song="playCurrentSong"
+          @add-to-playlist="handleAddToPlaylist"
+          @replace-to-playlist="handleReplaceToPlaylist"
+        />
+        <Settings
+          v-if="view === 'settings'"
+          :settings="settings"
+          @update:settings="updateSettings"
+          @close="view = 'main'"
+        />
+      </main>
+    </div>
+    <PlayerFooter
+      :current-song="audio.currentSong.value"
+      :cover-url="audio.coverUrl.value"
+      :is-playing="audio.isPlaying.value"
+      :current-time="audio.currentTime.value"
+      :duration="audio.duration.value"
+      :volume="audio.volume.value"
+      :show-detail="showPlayerDetail"
+      :play-mode="playMode"
+      @toggle-play="handleTogglePlay"
+      @prev="playPrev"
+      @next="playNext"
+      @seek="audio.seek"
+      @set-volume="audio.setVolume"
+      @open-detail="togglePlayerDetail"
+      @cycle-mode="cyclePlayMode"
+      @toggle-queue="toggleQueue"
+    />
+    <PlayerDetail
+      :show="showPlayerDetail"
+      :current-song="audio.currentSong.value"
+      :cover-url="audio.coverUrl.value"
+      :is-playing="audio.isPlaying.value"
+      :lyrics="lyrics.lyrics.value"
+      :has-lyrics="lyrics.hasLyrics.value"
+      :current-time="lyricTime"
+      @close="togglePlayerDetail"
+      @seek="audio.seek"
+    />
+    <PlayQueue
+      :show="showQueue"
+      :playlist="currentPlaylist ?? null"
+      :current-song="audio.currentSong.value"
+      @close="showQueue = false"
+      @play="playCurrentSong"
+    />
+    <audio ref="audioRef" style="display: none;"></audio>
+  </div>
+</template>
+
+<style scoped>
+.glass {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--fluent-text);
+  background: var(--fluent-bg-glass);
+  backdrop-filter: blur(40px) saturate(125%);
+  -webkit-backdrop-filter: blur(40px) saturate(125%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.window-bg-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  overflow: hidden;
+}
+</style>
