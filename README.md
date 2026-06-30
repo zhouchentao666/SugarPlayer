@@ -1,19 +1,73 @@
-# README
+# SugarPlayer / SugarMusic
 
-## About
+一款基于 Wails v3 + Vue 3 开发的本地音乐播放器，支持歌词、播放列表管理与现代化窗口效果。
 
-This is the official Wails Vue-TS template.
+## 功能特性
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+- 本地音乐播放：支持 MP3、FLAC、WAV、AAC、OGG、M4A、WMA、OPUS 等常见格式
+- 歌词显示：支持普通 LRC、增强 LRC、YRC、LRC A2，集成 AMLL 歌词组件
+- 播放列表：文件夹扫描、创建与管理多个播放列表
+- 全屏播放器：封面 FLIP 动画、自适应布局、AMLL 歌词、倍速播放
+- 倍速播放：0.25x ~ 16x 滑块调节
+- 窗口效果：Windows Acrylic、自定义背景图、歌曲主题色、无边框窗口
+- 状态持久化：可保存播放列表、当前歌曲、窗口位置与播放进度
 
-## Live Development
+## 技术栈
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+- 后端：Go 1.25 + Wails v3 (`v3.0.0-alpha2.108`)
+- 前端：Vue 3 + TypeScript + Vite
+- 歌词：@applemusic-like-lyrics
+- 元数据：go.senan.xyz/taglib
 
-## Building
+## 开发环境
 
-To build a redistributable, production mode package, use `wails build`.
+- 安装 Go 1.25+
+- 安装 Node.js 与 npm
+- 安装 Wails v3 CLI：`go install github.com/wailsapp/wails/v3/cmd/wails3@latest`
+
+## 常用命令
+
+```bash
+# 安装前端依赖
+cd frontend && npm install
+
+# 前端开发（Vite）
+npm run dev
+
+# 前端构建
+npm run build
+
+# 完整构建可执行程序（使用 wails3）
+wails3 build
+```
+
+## 项目结构
+
+```
+sugarplayer/
+├── app.go           # Wails Service 入口与生命周期
+├── audio.go         # 本地音频流服务、元数据读取
+├── config.go        # 配置持久化
+├── dialogs.go       # 文件/文件夹选择对话框
+├── watcher.go       # 文件夹监控
+├── main.go          # 应用入口与窗口配置
+├── wails.json       # Wails 项目配置
+├── Taskfile.yml     # 构建任务
+├── build/           # 平台构建资源与安装程序
+└── frontend/        # Vue 前端源码
+    ├── src/components/   # 界面组件
+    ├── src/composables/  # 业务逻辑组合式函数
+    ├── src/utils/        # 工具函数
+    └── package.json
+```
+
+## 注意事项
+
+- 请使用 `wails3 build` 进行打包，不要使用旧版 `wails build`。
+- Windows 亚克力效果需要在 `main.go` 中设置 `BackgroundTypeTranslucent` 与 `BackdropType: application.Acrylic`。
+- `frontend/vite.config.ts` 中已固定 `target: 'es2021'` 与 `cssTarget: 'chrome100'`，以兼容 AMLL 依赖。
+- 构建时若出现 AMLL CSS nesting 警告，不影响运行。
+
+## 版本
+
+当前版本：`0.0.2`
