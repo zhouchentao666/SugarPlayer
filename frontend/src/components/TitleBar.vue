@@ -1,6 +1,10 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import { Window, Application, System } from '@wailsio/runtime'
+import { Window, System } from '@wailsio/runtime'
+
+const emit = defineEmits<{
+  close: []
+}>()
 
 const isMaximised = ref(false)
 
@@ -18,7 +22,7 @@ async function toggleMaximise() {
 }
 
 function closeWindow() {
-  Application.Quit()
+  emit('close')
 }
 
 onMounted(async () => {

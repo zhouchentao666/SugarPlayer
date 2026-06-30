@@ -136,6 +136,14 @@ export function StopWatching() {
 }
 
 /**
+ * Version returns the current application version.
+ * @returns {$CancellablePromise<string>}
+ */
+export function Version() {
+    return $Call.ByID(2431199839);
+}
+
+/**
  * WatchMusicFolder watches a folder and its subfolders for changes.
  * When files are added or removed, a "folder:changed" event is emitted.
  * @param {string} path

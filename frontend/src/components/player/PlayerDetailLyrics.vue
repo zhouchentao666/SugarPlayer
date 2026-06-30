@@ -71,9 +71,9 @@ function onLineClick(e: LyricLineMouseEvent) {
 
 .lyric-player {
   width: 100%;
-  max-width: 520px;
+  max-width: clamp(480px, 42vw, 860px);
   height: 100%;
-  --amll-lp-font-size: clamp(18px, 2.2vw, 32px);
+  --amll-lp-font-size: clamp(18px, 2.6vw, 42px);
 }
 
 .lyrics-placeholder {
@@ -82,7 +82,7 @@ function onLineClick(e: LyricLineMouseEvent) {
   justify-content: center;
   text-align: center;
   width: 100%;
-  max-width: 520px;
+  max-width: clamp(480px, 42vw, 860px);
   height: 100%;
   font-size: 16px;
   color: rgba(255, 255, 255, 0.45);

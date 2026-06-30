@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { onMounted, ref } from 'vue'
+import { Version } from '../../bindings/sugarplayer/app'
 import { type AppSettings } from '../composables/useConfig'
 import SettingCard from './settings/SettingCard.vue'
 import SettingRow from './settings/SettingRow.vue'
@@ -15,6 +17,16 @@ const emit = defineEmits<{
   (e: 'update:settings', settings: AppSettings): void
   (e: 'close'): void
 }>()
+
+const appVersion = ref('')
+
+onMounted(async () => {
+  try {
+    appVersion.value = await Version()
+  } catch {
+    appVersion.value = ''
+  }
+})
 
 function update(partial: Partial<AppSettings>) {
   emit('update:settings', { ...props.settings, ...partial })
@@ -70,19 +82,34 @@ function handleQualityChange(event: Event) {
             <option v-for="q in qualities" :key="q.value" :value="q.value">{{ q.label }}</option>
           </select>
         </SettingRow>
-        <SettingRow label="自动播放" description="启动应用后继续播放上次歌曲">
+        <SettingRow label="打开后自动播放音乐" description="启动应用后自动继续播放">
           <ToggleSwitch
             :model-value="settings.autoplay"
             @update:model-value="value => update({ autoplay: value })"
+          />
+        </SettingRow>
+        <SettingRow label="重启后保存播放列表和当前音乐" description="退出时记住当前播放的列表、歌曲和进度">
+          <ToggleSwitch
+            :model-value="settings.savePlaylistAndSong"
+            @update:model-value="value => update({ savePlaylistAndSong: value })"
           />
         </SettingRow>
       </SettingCard>
 
       <WindowEffectSettings :settings="settings" @update="update" />
 
+      <SettingCard title="窗口">
+        <SettingRow label="重启后保存窗口位置和大小" description="退出时记住窗口的位置与尺寸">
+          <ToggleSwitch
+            :model-value="settings.saveWindowPosition"
+            @update:model-value="value => update({ saveWindowPosition: value })"
+          />
+        </SettingRow>
+      </SettingCard>
+
       <SettingCard title="关于">
         <SettingRow label="SugarMusic" description="一个简洁的本地音乐播放器">
-          <span class="setting-value">v0.0.1</span>
+          <span class="setting-value">v{{ appVersion || '0.0.1' }}</span>
         </SettingRow>
       </SettingCard>
     </div>
@@ -132,7 +159,6 @@ function handleQualityChange(event: Event) {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 720px;
 }
 
 .fluent-select {

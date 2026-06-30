@@ -35,22 +35,41 @@ type ConfigPlaylist struct {
 
 // ConfigSettings represents app settings in persisted config.
 type ConfigSettings struct {
-	Theme              string  `json:"theme"`
-	AccentColor        string  `json:"accentColor"`
-	Quality            string  `json:"quality"`
-	Autoplay           bool    `json:"autoplay"`
-	WindowEffect       string  `json:"windowEffect"`
-	CustomImagePath    string  `json:"customImagePath"`
-	CustomImageOpacity float64 `json:"customImageOpacity"`
-	CustomImageBlur    float64 `json:"customImageBlur"`
-	SongColorOpacity   float64 `json:"songColorOpacity"`
-	SongColorBlur      float64 `json:"songColorBlur"`
+	Theme               string  `json:"theme"`
+	AccentColor         string  `json:"accentColor"`
+	Quality             string  `json:"quality"`
+	Autoplay            bool    `json:"autoplay"`
+	SavePlaylistAndSong bool    `json:"savePlaylistAndSong"`
+	SaveWindowPosition  bool    `json:"saveWindowPosition"`
+	WindowEffect        string  `json:"windowEffect"`
+	CustomImagePath     string  `json:"customImagePath"`
+	CustomImageOpacity  float64 `json:"customImageOpacity"`
+	CustomImageBlur     float64 `json:"customImageBlur"`
+	SongColorOpacity    float64 `json:"songColorOpacity"`
+	SongColorBlur       float64 `json:"songColorBlur"`
+}
+
+// ConfigPlayback represents the last playback state.
+type ConfigPlayback struct {
+	PlaylistID string  `json:"playlistId"`
+	SongIndex  int     `json:"songIndex"`
+	Time       float64 `json:"time"`
+}
+
+// ConfigWindow represents the last window bounds.
+type ConfigWindow struct {
+	X      int `json:"x"`
+	Y      int `json:"y"`
+	Width  int `json:"width"`
+	Height int `json:"height"`
 }
 
 // AppConfig represents the persisted application config.
 type AppConfig struct {
 	Playlists []ConfigPlaylist `json:"playlists"`
 	Settings  ConfigSettings   `json:"settings"`
+	Playback  ConfigPlayback   `json:"playback"`
+	Window    ConfigWindow     `json:"window"`
 }
 
 func configPath() string {

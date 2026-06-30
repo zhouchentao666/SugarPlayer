@@ -114,7 +114,7 @@ defineExpose({ detailCoverRef })
 }
 
 .cover-container.expanded {
-  --cover-size: clamp(220px, 45vh, 580px);
+  --cover-size: min(clamp(180px, 38vw, 520px), clamp(220px, 45vh, 580px));
   top: calc(45% - var(--cover-size) / 2);
   width: var(--cover-size);
   border-radius: 16px;

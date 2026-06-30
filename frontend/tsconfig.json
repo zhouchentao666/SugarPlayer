@@ -15,7 +15,11 @@
       "ESNext",
       "DOM"
     ],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@wailsio/runtime": ["node_modules/@wailsio/runtime/types/index.d.ts"]
+    }
   },
   "include": [
     "src/**/*.ts",

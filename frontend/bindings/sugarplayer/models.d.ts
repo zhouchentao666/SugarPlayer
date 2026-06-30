@@ -1,6 +1,8 @@
 export interface AppConfig {
   playlists: ConfigPlaylist[] | null;
   settings: ConfigSettings;
+  playback: ConfigPlayback;
+  window: ConfigWindow;
 }
 
 export interface ConfigPlaylist {
@@ -15,12 +17,27 @@ export interface ConfigSettings {
   accentColor: string;
   quality: string;
   autoplay: boolean;
+  savePlaylistAndSong: boolean;
+  saveWindowPosition: boolean;
   windowEffect: string;
   customImagePath: string;
   customImageOpacity: number;
   customImageBlur: number;
   songColorOpacity: number;
   songColorBlur: number;
+}
+
+export interface ConfigPlayback {
+  playlistId: string;
+  songIndex: number;
+  time: number;
+}
+
+export interface ConfigWindow {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface ConfigSong {

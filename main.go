@@ -21,11 +21,11 @@ func main() {
 	})
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:           "SugarMusic",
-		Width:           800,
-		Height:          600,
-		Frameless:       true,
-		BackgroundType:  application.BackgroundTypeTranslucent,
+		Title:          "SugarMusic",
+		Width:          800,
+		Height:         600,
+		Frameless:      true,
+		BackgroundType: application.BackgroundTypeTranslucent,
 		Windows: application.WindowsWindow{
 			BackdropType: application.Acrylic,
 		},
@@ -36,4 +36,9 @@ func main() {
 	})
 
 	app.Run()
+}
+
+// Version returns the current application version.
+func (a *App) Version() string {
+	return "0.0.2"
 }

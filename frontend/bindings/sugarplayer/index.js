@@ -15,6 +15,11 @@ import * as $models from "./models.js";
  */
 
 /**
+ * ConfigPlayback represents the last playback state.
+ * @typedef {$models.ConfigPlayback} ConfigPlayback
+ */
+
+/**
  * ConfigPlaylist represents a playlist in persisted config.
  * @typedef {$models.ConfigPlaylist} ConfigPlaylist
  */
@@ -27,6 +32,11 @@ import * as $models from "./models.js";
 /**
  * ConfigSong represents a song in persisted config.
  * @typedef {$models.ConfigSong} ConfigSong
+ */
+
+/**
+ * ConfigWindow represents the last window bounds.
+ * @typedef {$models.ConfigWindow} ConfigWindow
  */
 
 /**

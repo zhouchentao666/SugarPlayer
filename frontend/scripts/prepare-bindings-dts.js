@@ -27,11 +27,14 @@ export function SaveConfig(config: models.AppConfig): CancellablePromise<void>;
 export function ScanMusicFolder(path: string): CancellablePromise<string[]>;
 export function StopWatching(): CancellablePromise<void>;
 export function WatchMusicFolder(path: string): CancellablePromise<void>;
+export function Version(): CancellablePromise<string>;
 `
 
 const modelsDts = `export interface AppConfig {
   playlists: ConfigPlaylist[] | null;
   settings: ConfigSettings;
+  playback: ConfigPlayback;
+  window: ConfigWindow;
 }
 
 export interface ConfigPlaylist {
@@ -46,12 +49,27 @@ export interface ConfigSettings {
   accentColor: string;
   quality: string;
   autoplay: boolean;
+  savePlaylistAndSong: boolean;
+  saveWindowPosition: boolean;
   windowEffect: string;
   customImagePath: string;
   customImageOpacity: number;
   customImageBlur: number;
   songColorOpacity: number;
   songColorBlur: number;
+}
+
+export interface ConfigPlayback {
+  playlistId: string;
+  songIndex: number;
+  time: number;
+}
+
+export interface ConfigWindow {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface ConfigSong {

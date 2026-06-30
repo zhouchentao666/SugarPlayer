@@ -15,6 +15,7 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
   const currentTime = ref(0)
   const duration = ref(0)
   const volume = ref(100)
+  const playbackRate = ref(1)
   const coverUrl = ref<string | null>(null)
   const playlistId = ref<string | null>(null)
   const index = ref(-1)
@@ -37,7 +38,7 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     return `${serverUrl.value}/audio?path=${encodeURIComponent(path)}`
   }
 
-  async function play(playlist: string, songIndex: number, song: Song) {
+  async function play(playlist: string, songIndex: number, song: Song, autoPlay = true) {
     playlistId.value = playlist
     index.value = songIndex
     currentSong.value = song
@@ -50,8 +51,13 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     try {
       audioRef.value.src = await audioUrl(song.path)
       audioRef.value.load()
-      await audioRef.value.play()
-      isPlaying.value = true
+      audioRef.value.playbackRate = playbackRate.value
+      if (autoPlay) {
+        await audioRef.value.play()
+        isPlaying.value = true
+      } else {
+        isPlaying.value = false
+      }
     } catch {
       isPlaying.value = false
     }
@@ -79,6 +85,12 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
   function setVolume(value: number) {
     volume.value = value
     if (audioRef.value) audioRef.value.volume = value / 100
+  }
+
+  function setPlaybackRate(rate: number) {
+    const clamped = Math.min(16, Math.max(0.25, rate))
+    playbackRate.value = clamped
+    if (audioRef.value) audioRef.value.playbackRate = clamped
   }
 
   function bindAudioEvents() {
@@ -113,6 +125,7 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     currentTime,
     duration,
     volume,
+    playbackRate,
     coverUrl,
     playlistId,
     index,
@@ -122,5 +135,6 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     pause,
     seek,
     setVolume,
+    setPlaybackRate,
   }
 }

@@ -7,6 +7,16 @@
  * @typedef {Object} AppConfig
  * @property {ConfigPlaylist[] | null} playlists
  * @property {ConfigSettings} settings
+ * @property {ConfigPlayback} playback
+ * @property {ConfigWindow} window
+ */
+
+/**
+ * ConfigPlayback represents the last playback state.
+ * @typedef {Object} ConfigPlayback
+ * @property {string} playlistId
+ * @property {number} songIndex
+ * @property {number} time
  */
 
 /**
@@ -25,6 +35,8 @@
  * @property {string} accentColor
  * @property {string} quality
  * @property {boolean} autoplay
+ * @property {boolean} savePlaylistAndSong
+ * @property {boolean} saveWindowPosition
  * @property {string} windowEffect
  * @property {string} customImagePath
  * @property {number} customImageOpacity
@@ -40,6 +52,15 @@
  * @property {string} path
  * @property {string} title
  * @property {SongMetadata | null} [metadata]
+ */
+
+/**
+ * ConfigWindow represents the last window bounds.
+ * @typedef {Object} ConfigWindow
+ * @property {number} x
+ * @property {number} y
+ * @property {number} width
+ * @property {number} height
  */
 
 /**

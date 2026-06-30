@@ -4,6 +4,7 @@ import ProgressBar from './player/ProgressBar.vue'
 import SongInfo from './player/SongInfo.vue'
 import PlayerControls, { type PlayMode } from './player/PlayerControls.vue'
 import VolumeControl from './player/VolumeControl.vue'
+import PlaybackRateControl from './player/PlaybackRateControl.vue'
 
 defineProps<{
   currentSong: Song | null
@@ -12,6 +13,7 @@ defineProps<{
   currentTime: number
   duration: number
   volume: number
+  playbackRate: number
   showDetail?: boolean
   playMode: PlayMode
 }>()
@@ -22,6 +24,7 @@ const emit = defineEmits<{
   (e: 'next'): void
   (e: 'seek', time: number): void
   (e: 'set-volume', volume: number): void
+  (e: 'set-playback-rate', rate: number): void
   (e: 'open-detail'): void
   (e: 'cycle-mode'): void
   (e: 'toggle-queue'): void
@@ -71,6 +74,7 @@ function formatDuration(seconds: number): string {
       <div class="section right">
         <span class="time-label">{{ formatDuration(currentTime) }} / {{ formatDuration(duration || 0) }}</span>
         <VolumeControl :volume="volume" @set-volume="v => emit('set-volume', v)" />
+        <PlaybackRateControl :playback-rate="playbackRate" @set-playback-rate="r => emit('set-playback-rate', r)" />
       </div>
     </div>
   </footer>

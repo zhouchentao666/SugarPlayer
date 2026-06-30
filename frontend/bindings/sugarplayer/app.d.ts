@@ -16,3 +16,4 @@ export function SaveConfig(config: models.AppConfig): CancellablePromise<void>;
 export function ScanMusicFolder(path: string): CancellablePromise<string[]>;
 export function StopWatching(): CancellablePromise<void>;
 export function WatchMusicFolder(path: string): CancellablePromise<void>;
+export function Version(): CancellablePromise<string>;

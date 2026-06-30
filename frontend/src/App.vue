@@ -9,12 +9,12 @@ import PlayerFooter from './components/PlayerFooter.vue'
 import PlayerDetail from './components/player/PlayerDetail.vue'
 import { useAudioPlayer } from './composables/useAudioPlayer'
 import { usePlaylists } from './composables/usePlaylists'
-import { useConfig, type AppSettings } from './composables/useConfig'
+import { useConfig, type AppSettings, type ConfigPlayback, type ConfigWindow } from './composables/useConfig'
 import { useLyrics } from './composables/useLyrics'
 import { useWindowEffect } from './composables/useWindowEffect'
+import { useSession } from './composables/useSession'
 import PlayQueue from './components/player/PlayQueue.vue'
 import type { PlayMode } from './components/player/PlayerControls.vue'
-import type { Song } from './types'
 
 const view = ref<'main' | 'settings'>('main')
 const isLoading = ref(true)
@@ -27,6 +27,8 @@ const settings = ref<AppSettings>({
   accentColor: '#0078d4',
   quality: 'standard',
   autoplay: false,
+  savePlaylistAndSong: true,
+  saveWindowPosition: true,
   windowEffect: 'acrylic',
   customImagePath: '',
   customImageOpacity: 35,
@@ -35,10 +37,23 @@ const settings = ref<AppSettings>({
   songColorBlur: 30,
 })
 
+const playbackState = ref<ConfigPlayback>({
+  playlistId: '',
+  songIndex: -1,
+  time: 0,
+})
+
+const windowState = ref<ConfigWindow>({
+  x: 0,
+  y: 0,
+  width: 800,
+  height: 600,
+})
+
 const { playlists, selectedId, updatePlaylists, updatePlaylist, selectPlaylist, addMusicFiles, addMusicFolder, refreshFolder, rewatchFolders, addSongs, replaceSongs } = usePlaylists()
 const currentPlaylist = computed(() => playlists.value.find(p => p.id === selectedId.value))
 
-const { save, load } = useConfig(playlists, settings, isLoading)
+const { save, load } = useConfig(playlists, settings, playbackState, windowState, isLoading)
 
 const audio = useAudioPlayer({
   audioRef,
@@ -103,33 +118,15 @@ function playPrev() {
   playSong(audio.playlistId.value, prevIndex)
 }
 
-function playSong(playlistId: string, index: number) {
+function playSong(playlistId: string, index: number, autoPlay = true) {
   const playlist = playlists.value.find(p => p.id === playlistId)
   if (!playlist || index < 0 || index >= playlist.songs.length) return
-  audio.play(playlistId, index, playlist.songs[index])
+  audio.play(playlistId, index, playlist.songs[index], autoPlay)
 }
 
 function playCurrentSong(index: number) {
   if (!currentPlaylist.value) return
   playSong(currentPlaylist.value.id, index)
-}
-
-function handleAddMusicFiles() {
-  if (!currentPlaylist.value) return
-  addMusicFiles(currentPlaylist.value.id)
-}
-
-function handleAddMusicFolder() {
-  if (!currentPlaylist.value) return
-  addMusicFolder(currentPlaylist.value.id)
-}
-
-function handleAddToPlaylist(playlistId: string, songs: Song[]) {
-  addSongs(playlistId, songs)
-}
-
-function handleReplaceToPlaylist(playlistId: string, songs: Song[]) {
-  replaceSongs(playlistId, songs)
 }
 
 function handleTogglePlay() {
@@ -143,6 +140,7 @@ function handleTogglePlay() {
 function updateSettings(newSettings: AppSettings) {
   settings.value = { ...newSettings }
 }
+const { handleClose, restoreSession } = useSession(settings, playbackState, windowState, save, playlists, audio, selectPlaylist)
 
 function onSelectPlaylist(id: string) {
   selectPlaylist(id)
@@ -167,6 +165,7 @@ let offFolderChanged: (() => void) | null = null
 onMounted(async () => {
   await load()
   await rewatchFolders()
+  await restoreSession()
   offFolderChanged = Events.On('folder:changed', (event: any) => {
     refreshFolder(event.data)
   })
@@ -189,7 +188,7 @@ onUnmounted(() => {
       class="window-bg-layer"
       :style="layerStyle"
     ></div>
-    <TitleBar />
+    <TitleBar @close="handleClose" />
     <div class="content">
       <Sidebar
         :playlists="playlists"
@@ -207,11 +206,11 @@ onUnmounted(() => {
           :playlists="playlists"
           :current-song="audio.currentSong.value"
           @update:playlist="updatePlaylist"
-          @add-music-files="handleAddMusicFiles"
-          @add-music-folder="handleAddMusicFolder"
+          @add-music-files="currentPlaylist && addMusicFiles(currentPlaylist.id)"
+          @add-music-folder="currentPlaylist && addMusicFolder(currentPlaylist.id)"
           @play-song="playCurrentSong"
-          @add-to-playlist="handleAddToPlaylist"
-          @replace-to-playlist="handleReplaceToPlaylist"
+          @add-to-playlist="addSongs"
+          @replace-to-playlist="replaceSongs"
         />
         <Settings
           v-if="view === 'settings'"
@@ -228,6 +227,7 @@ onUnmounted(() => {
       :current-time="audio.currentTime.value"
       :duration="audio.duration.value"
       :volume="audio.volume.value"
+      :playback-rate="audio.playbackRate.value"
       :show-detail="showPlayerDetail"
       :play-mode="playMode"
       @toggle-play="handleTogglePlay"
@@ -235,6 +235,7 @@ onUnmounted(() => {
       @next="playNext"
       @seek="audio.seek"
       @set-volume="audio.setVolume"
+      @set-playback-rate="audio.setPlaybackRate"
       @open-detail="togglePlayerDetail"
       @cycle-mode="cyclePlayMode"
       @toggle-queue="toggleQueue"

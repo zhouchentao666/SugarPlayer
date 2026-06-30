@@ -9,6 +9,8 @@ export interface AppSettings {
   accentColor: string
   quality: 'standard' | 'high' | 'lossless'
   autoplay: boolean
+  savePlaylistAndSong: boolean
+  saveWindowPosition: boolean
   windowEffect: WindowEffect
   customImagePath: string
   customImageOpacity: number
@@ -17,15 +19,32 @@ export interface AppSettings {
   songColorBlur: number
 }
 
+export interface ConfigPlayback {
+  playlistId: string
+  songIndex: number
+  time: number
+}
+
+export interface ConfigWindow {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export function useConfig(
   playlists: Ref<Playlist[]>,
   settings: Ref<AppSettings>,
+  playback: Ref<ConfigPlayback>,
+  windowState: Ref<ConfigWindow>,
   isLoading: Ref<boolean>
 ) {
   function buildConfig() {
     return {
       playlists: playlists.value,
       settings: settings.value,
+      playback: playback.value,
+      window: windowState.value,
     }
   }
 
@@ -47,12 +66,29 @@ export function useConfig(
           accentColor: config.settings.accentColor || '#0078d4',
           quality: (config.settings.quality as AppSettings['quality']) || 'standard',
           autoplay: config.settings.autoplay ?? false,
+          savePlaylistAndSong: config.settings.savePlaylistAndSong ?? true,
+          saveWindowPosition: config.settings.saveWindowPosition ?? true,
           windowEffect: (config.settings.windowEffect as WindowEffect) || 'acrylic',
           customImagePath: config.settings.customImagePath || '',
           customImageOpacity: hasEffect ? (config.settings.customImageOpacity ?? 35) : 35,
           customImageBlur: hasEffect ? (config.settings.customImageBlur ?? 20) : 20,
           songColorOpacity: hasEffect ? (config.settings.songColorOpacity ?? 45) : 45,
           songColorBlur: hasEffect ? (config.settings.songColorBlur ?? 30) : 30,
+        }
+      }
+      if (config.playback) {
+        playback.value = {
+          playlistId: config.playback.playlistId || '',
+          songIndex: config.playback.songIndex ?? -1,
+          time: config.playback.time ?? 0,
+        }
+      }
+      if (config.window) {
+        windowState.value = {
+          x: config.window.x ?? 0,
+          y: config.window.y ?? 0,
+          width: config.window.width ?? 800,
+          height: config.window.height ?? 600,
         }
       }
     } catch {
