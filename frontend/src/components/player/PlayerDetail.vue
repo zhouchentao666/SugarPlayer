@@ -31,7 +31,6 @@ const {
   handleTopChromeLeave,
   runEnterTransition,
   runLeaveTransition,
-  cancel,
   updateMaximizeState,
   staggerStyle,
   minimize,
@@ -45,6 +44,7 @@ const isExpanded = ref(false)
 const showLyrics = ref(true)
 const positionLyrics = ref(true)
 const isAnimating = ref(false)
+let detailAnimationId = 0
 
 const coverElement = computed(() =>
   detailLeftRef.value?.$el?.querySelector('.cover-container') as HTMLElement | null
@@ -71,8 +71,7 @@ watch(() => props.hasLyrics, (hasLyrics) => {
 })
 
 watch(() => props.show, async (visible) => {
-  cancel()
-  isAnimating.value = false
+  const animId = ++detailAnimationId
 
   if (visible) {
     isAnimating.value = true
@@ -86,13 +85,15 @@ watch(() => props.show, async (visible) => {
     await nextTick()
     await new Promise(resolve => requestAnimationFrame(resolve))
     await runEnterTransition(coverElement.value)
+    if (animId !== detailAnimationId) return
     isAnimating.value = false
   } else {
     isAnimating.value = true
     showLyrics.value = false
     isTopChromeVisible.value = false
-    isVisible.value = false
     await runLeaveTransition(coverElement.value)
+    if (animId !== detailAnimationId) return
+    isVisible.value = false
     isExpanded.value = false
     isAnimating.value = false
     positionLyrics.value = false
@@ -164,14 +165,14 @@ watch(() => props.show, async (visible) => {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
-  transition: opacity 500ms ease, visibility 0s 500ms;
+  transition: none;
 }
 
 .player-detail.visible {
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
-  transition: opacity 500ms ease, visibility 0s;
+  transition: none;
 }
 
 .player-inner {

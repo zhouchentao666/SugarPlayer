@@ -30,6 +30,45 @@ function clearStaggerTimers() {
   staggerTimers = []
 }
 
+function parseTransformMatrix(el: HTMLElement) {
+  const style = window.getComputedStyle(el).transform
+  if (!style || style === 'none') {
+    return { x: 0, y: 0, sx: 1, sy: 1 }
+  }
+  const matrix = new DOMMatrix(style)
+  const sx = Math.sqrt(matrix.a ** 2 + matrix.b ** 2)
+  const sy = Math.sqrt(matrix.c ** 2 + matrix.d ** 2)
+  return { x: matrix.e, y: matrix.f, sx, sy }
+}
+
+function naturalRectOf(el: HTMLElement): Rect {
+  const matrix = parseTransformMatrix(el)
+  const rect = el.getBoundingClientRect()
+  return {
+    x: rect.left - matrix.x,
+    y: rect.top - matrix.y,
+    width: rect.width / matrix.sx,
+    height: rect.height / matrix.sy,
+  }
+}
+
+function buildTransform(from: Rect, to: Rect): string {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  const sx = to.width / from.width
+  const sy = to.height / from.height
+  return `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`
+}
+
+function resetState() {
+  animationPhase.value = 'idle'
+  isAnimating.value = false
+  staggerPhase.value = 0
+  flipTransform.value = ''
+  flipBorderRadius.value = ''
+  flipTransition.value = ''
+}
+
 export function captureFirst(el: HTMLElement) {
   const rect = el.getBoundingClientRect()
   firstRect.value = {
@@ -40,29 +79,32 @@ export function captureFirst(el: HTMLElement) {
   }
 }
 
-function resetState() {
-  animationPhase.value = 'idle'
-  isAnimating.value = false
-  footerCoverVisible.value = false
-  staggerPhase.value = 0
-  flipTransform.value = ''
-  flipBorderRadius.value = ''
-  flipTransition.value = ''
-  // Note: bgOpacity is intentionally not reset here.
-  // playEnter/playLeave already set it to the correct final value (1 or 0).
-}
-
 export function playEnter(lastEl: HTMLElement): Promise<void> {
   return new Promise((resolve) => {
     const animId = ++currentAnimationId
+    const wasAnimating = isAnimating.value
     animationPhase.value = 'entering'
     isAnimating.value = true
     footerCoverVisible.value = false
-    bgOpacity.value = 0
     staggerPhase.value = 0
     clearStaggerTimers()
 
-    if (!firstRect.value) {
+    if (!wasAnimating) {
+      bgOpacity.value = 0
+    }
+
+    const naturalRect = naturalRectOf(lastEl)
+
+    flipTransition.value = 'none'
+    if (wasAnimating) {
+      const computedTransform = window.getComputedStyle(lastEl).transform
+      const computedBorderRadius = window.getComputedStyle(lastEl).borderRadius
+      flipTransform.value = computedTransform === 'none' ? 'translate(0, 0) scale(1, 1)' : computedTransform
+      flipBorderRadius.value = computedBorderRadius
+    } else if (firstRect.value) {
+      flipTransform.value = buildTransform(naturalRect, firstRect.value)
+      flipBorderRadius.value = '8px'
+    } else {
       bgOpacity.value = 1
       staggerPhase.value = 3
       setTimeout(() => {
@@ -72,16 +114,6 @@ export function playEnter(lastEl: HTMLElement): Promise<void> {
       return
     }
 
-    const lRect = lastEl.getBoundingClientRect()
-    const dx = firstRect.value.x - lRect.left
-    const dy = firstRect.value.y - lRect.top
-    const sx = firstRect.value.width / lRect.width
-    const sy = firstRect.value.height / lRect.height
-
-    flipTransition.value = 'none'
-    flipTransform.value = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`
-    flipBorderRadius.value = '8px'
-
     requestAnimationFrame(() => {
       if (animId !== currentAnimationId) { resolve(); return }
       requestAnimationFrame(() => {
@@ -90,7 +122,6 @@ export function playEnter(lastEl: HTMLElement): Promise<void> {
         flipTransition.value = `transform ${DURATION}ms ${EASING}, border-radius ${DURATION}ms ${EASING}`
         flipTransform.value = 'translate(0, 0) scale(1, 1)'
         flipBorderRadius.value = '16px'
-
         bgOpacity.value = 1
 
         staggerTimers.push(
@@ -123,20 +154,12 @@ export function playEnter(lastEl: HTMLElement): Promise<void> {
 export function playLeave(detailCoverEl: HTMLElement): Promise<void> {
   return new Promise((resolve) => {
     const animId = ++currentAnimationId
+    const wasAnimating = isAnimating.value
     animationPhase.value = 'leaving'
     isAnimating.value = true
     clearStaggerTimers()
     staggerPhase.value = 0
-    footerCoverVisible.value = true
-
-    if (!firstRect.value) {
-      bgOpacity.value = 0
-      setTimeout(() => {
-        resetState()
-        resolve()
-      }, DURATION * 0.6)
-      return
-    }
+    footerCoverVisible.value = false
 
     const footerEl = document.querySelector('[data-footer-cover]') as HTMLElement | null
     if (footerEl) {
@@ -149,15 +172,28 @@ export function playLeave(detailCoverEl: HTMLElement): Promise<void> {
       }
     }
 
-    const lRect = detailCoverEl.getBoundingClientRect()
-    const dx = firstRect.value.x - lRect.left
-    const dy = firstRect.value.y - lRect.top
-    const sx = firstRect.value.width / lRect.width
-    const sy = firstRect.value.height / lRect.height
+    if (!firstRect.value) {
+      bgOpacity.value = 0
+      setTimeout(() => {
+        resetState()
+        footerCoverVisible.value = true
+        resolve()
+      }, DURATION * 0.6)
+      return
+    }
+
+    const naturalRect = naturalRectOf(detailCoverEl)
 
     flipTransition.value = 'none'
-    flipTransform.value = 'translate(0, 0) scale(1, 1)'
-    flipBorderRadius.value = '16px'
+    if (wasAnimating) {
+      const computedTransform = window.getComputedStyle(detailCoverEl).transform
+      const computedBorderRadius = window.getComputedStyle(detailCoverEl).borderRadius
+      flipTransform.value = computedTransform === 'none' ? 'translate(0, 0) scale(1, 1)' : computedTransform
+      flipBorderRadius.value = computedBorderRadius
+    } else {
+      flipTransform.value = 'translate(0, 0) scale(1, 1)'
+      flipBorderRadius.value = '16px'
+    }
     bgOpacity.value = 0
 
     requestAnimationFrame(() => {
@@ -166,12 +202,13 @@ export function playLeave(detailCoverEl: HTMLElement): Promise<void> {
         if (animId !== currentAnimationId) { resolve(); return }
 
         flipTransition.value = `transform ${DURATION}ms ${EASING}, border-radius ${DURATION}ms ${EASING}`
-        flipTransform.value = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`
+        flipTransform.value = buildTransform(naturalRect, firstRect.value!)
         flipBorderRadius.value = '8px'
 
         setTimeout(() => {
           if (animId !== currentAnimationId) { resolve(); return }
           resetState()
+          footerCoverVisible.value = true
           resolve()
         }, DURATION)
       })
@@ -183,6 +220,7 @@ export function cancel() {
   currentAnimationId++
   clearStaggerTimers()
   resetState()
+  footerCoverVisible.value = true
 }
 
 export const coverStyle = computed<CSSProperties>(() => {

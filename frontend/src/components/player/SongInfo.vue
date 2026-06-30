@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { footerCoverVisible } from '../../composables/useSharedTransition'
 import { type Song } from '../../types'
 
 const props = defineProps<{
@@ -31,7 +32,7 @@ function handleClick() {
     <div
       class="cover"
       data-footer-cover
-      :class="{ 'detail-mode': showDetail }"
+      :class="{ hidden: !footerCoverVisible }"
       @click="emit('click')"
     >
       <img v-if="coverUrl" :src="coverUrl" class="cover-img" alt="cover" />
@@ -70,7 +71,7 @@ function handleClick() {
   flex-shrink: 0;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 200ms ease, box-shadow 200ms ease, opacity 500ms ease;
+  transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
 .cover:hover {
@@ -78,9 +79,10 @@ function handleClick() {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.cover.detail-mode {
+.cover.hidden {
   opacity: 0;
   pointer-events: none;
+  transition: none;
 }
 
 .cover-img {

@@ -1,9 +1,8 @@
 <script lang="ts" setup>
 import { ref, watch, computed } from 'vue'
-import { coverStyle, footerCoverVisible } from '../../composables/useSharedTransition'
+import { coverStyle } from '../../composables/useSharedTransition'
 import { useCoverTilt } from '../../composables/useCoverTilt'
 import PlayerDetailCoverImage from './PlayerDetailCoverImage.vue'
-import PlayerDetailCoverReflection from './PlayerDetailCoverReflection.vue'
 
 const props = defineProps<{
   coverUrl: string | null
@@ -18,7 +17,6 @@ const emit = defineEmits<{
 }>()
 
 const localCoverUrl = ref('')
-const reflectionCoverUrl = ref('')
 const detailCoverRef = ref<HTMLElement | null>(null)
 
 const currentSongPath = computed(() => props.coverUrl || '')
@@ -27,22 +25,12 @@ watch(() => props.coverUrl, (cover) => {
   localCoverUrl.value = cover || ''
 }, { immediate: true })
 
-watch([() => props.coverUrl, () => props.isExpanded], () => {
-  if (!props.isExpanded) {
-    reflectionCoverUrl.value = ''
-    return
-  }
-  const nextReflectionUrl = localCoverUrl.value || ''
-  if (nextReflectionUrl !== reflectionCoverUrl.value) {
-    reflectionCoverUrl.value = nextReflectionUrl
-  }
-}, { immediate: true })
-
 const {
   shineX,
   shineY,
   isHovering,
   coverTransform,
+  shadowTransform,
   handleMouseMove,
   handleMouseEnter,
   handleMouseLeave,
@@ -92,10 +80,11 @@ defineExpose({ detailCoverRef })
         ></div>
       </div>
 
-      <PlayerDetailCoverReflection
+      <div
         v-if="props.isExpanded"
-        :reflection-url="reflectionCoverUrl"
-      />
+        class="cover-shadow"
+        :style="{ transform: shadowTransform }"
+      ></div>
     </div>
   </div>
 </template>
@@ -118,14 +107,10 @@ defineExpose({ detailCoverRef })
   top: calc(45% - var(--cover-size) / 2);
   width: var(--cover-size);
   border-radius: 16px;
-  box-shadow:
-    0 30px 60px -12px rgba(0, 0, 0, 0.6),
-    0 18px 36px -18px rgba(0, 0, 0, 0.7);
   transition:
     left 600ms cubic-bezier(0.22, 1, 0.36, 1),
     top 500ms cubic-bezier(0.22, 1, 0.36, 1),
     width 500ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 300ms ease,
     border-radius 300ms ease;
 }
 
@@ -138,9 +123,7 @@ defineExpose({ detailCoverRef })
 }
 
 .cover-container.expanded.animating {
-  transition:
-    opacity 300ms ease,
-    border-radius 300ms ease;
+  transition: border-radius 300ms ease;
 }
 
 .cover-container.collapsed {
@@ -149,7 +132,7 @@ defineExpose({ detailCoverRef })
   width: 48px;
   border-radius: 8px;
   pointer-events: none;
-  opacity: v-bind('footerCoverVisible ? 1 : 0');
+  opacity: 0;
 }
 
 .cover-inner {
@@ -172,5 +155,25 @@ defineExpose({ detailCoverRef })
   mix-blend-mode: overlay;
   transition: opacity 240ms ease-out;
   border-radius: inherit;
+}
+
+.cover-shadow {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 10%;
+  width: 80%;
+  height: 14%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.2) 45%,
+    transparent 80%
+  );
+  filter: blur(12px);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.85;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease;
 }
 </style>

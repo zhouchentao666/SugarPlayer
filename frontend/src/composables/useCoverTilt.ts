@@ -40,11 +40,21 @@ export function useCoverTilt(isExpanded: () => boolean) {
     return `perspective(1000px) rotateX(${tiltRotateX.value}deg) rotateY(${tiltRotateY.value}deg) scale3d(1.02, 1.02, 1.02)`
   })
 
+  const shadowTransform = computed(() => {
+    if (!isExpanded() || !isHovering.value) return ''
+    const x = -tiltRotateY.value * 1.6
+    const y = tiltRotateX.value * 1.2
+    const scaleX = 1 - Math.abs(tiltRotateY.value) * 0.008
+    const scaleY = 1 - Math.abs(tiltRotateX.value) * 0.008
+    return `translate(${x}px, ${y}px) scale(${scaleX}, ${scaleY})`
+  })
+
   return {
     shineX,
     shineY,
     isHovering,
     coverTransform,
+    shadowTransform,
     handleMouseMove,
     handleMouseEnter,
     handleMouseLeave,
