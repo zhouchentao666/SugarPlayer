@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useDominantColors } from '../../composables/useDominantColors'
+import PlayerDetailDynamicBackground from './PlayerDetailDynamicBackground.vue'
 
 const props = defineProps<{
   coverUrl: string | null
   active: boolean
+  backgroundMode?: 'static' | 'dynamic'
+  hasLyrics?: boolean
 }>()
 
 const { dominantColors } = useDominantColors(computed(() => props.coverUrl))
@@ -15,36 +18,46 @@ const { dominantColors } = useDominantColors(computed(() => props.coverUrl))
     <!-- Dark base -->
     <div class="base-bg"></div>
 
-    <!-- Dominant color wash -->
-    <div
-      class="color-layer"
-      :style="{ backgroundColor: dominantColors[0] }"
-    ></div>
-
-    <!-- Blurred cover as main background -->
-    <div v-if="coverUrl" class="cover-bg-layer">
-      <img
-        :src="coverUrl"
-        class="cover-bg-img"
-        draggable="false"
-        decoding="async"
+    <template v-if="backgroundMode === 'dynamic'">
+      <PlayerDetailDynamicBackground
+        :cover-url="coverUrl"
+        :active="active"
+        :has-lyrics="hasLyrics"
       />
-      <div class="cover-overlay"></div>
-    </div>
+    </template>
 
-    <!-- Soft radial gradients from palette -->
-    <div
-      class="gradient-1"
-      :style="{ background: `radial-gradient(circle at 24% 16%, ${dominantColors[1] || dominantColors[0]}22 0%, transparent 52%)` }"
-    ></div>
-    <div
-      class="gradient-2"
-      :style="{ background: `radial-gradient(circle at 78% 84%, ${dominantColors[2] || dominantColors[0]}18 0%, transparent 62%)` }"
-    ></div>
+    <template v-else>
+      <!-- Dominant color wash -->
+      <div
+        class="color-layer"
+        :style="{ backgroundColor: dominantColors[0] }"
+      ></div>
 
-    <!-- Vignette / edge darkening -->
-    <div class="edge-gradient-h"></div>
-    <div class="edge-gradient-v"></div>
+      <!-- Blurred cover as main background -->
+      <div v-if="coverUrl" class="cover-bg-layer">
+        <img
+          :src="coverUrl"
+          class="cover-bg-img"
+          draggable="false"
+          decoding="async"
+        />
+        <div class="cover-overlay"></div>
+      </div>
+
+      <!-- Soft radial gradients from palette -->
+      <div
+        class="gradient-1"
+        :style="{ background: `radial-gradient(circle at 24% 16%, ${dominantColors[1] || dominantColors[0]}22 0%, transparent 52%)` }"
+      ></div>
+      <div
+        class="gradient-2"
+        :style="{ background: `radial-gradient(circle at 78% 84%, ${dominantColors[2] || dominantColors[0]}18 0%, transparent 62%)` }"
+      ></div>
+
+      <!-- Vignette / edge darkening -->
+      <div class="edge-gradient-h"></div>
+      <div class="edge-gradient-v"></div>
+    </template>
   </div>
 </template>
 

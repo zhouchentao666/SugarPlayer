@@ -9,6 +9,7 @@ import {
   isYrcFormat,
   sanitizeLyricLines,
 } from '../utils/lyricConverter'
+import { localMetadata } from './useLocalMetadata'
 
 export type { LyricLine }
 
@@ -44,20 +45,25 @@ export function useLyrics(currentSong: Ref<{ path: string } | null>) {
       return
     }
 
-    try {
-      const lrc = await ReadLyrics(path)
-      const parsed = parseLyric(lrc)
-      lyrics.value = parsed
-      hasLyrics.value = parsed.length > 0
-    } catch {
+    const override = localMetadata.value[path]?.lyrics
+    const lrc = (override && override.trim() !== '') ? override : await ReadLyrics(path).catch(() => '')
+    if (!lrc) {
       lyrics.value = []
       hasLyrics.value = false
+      return
     }
+    const parsed = parseLyric(lrc)
+    lyrics.value = parsed
+    hasLyrics.value = parsed.length > 0
   }
 
   watch(currentSong, (song) => {
     loadLyrics(song?.path || null)
   }, { immediate: true })
+
+  watch(() => localMetadata.value[currentSong.value?.path ?? '']?.lyrics, () => {
+    loadLyrics(currentSong.value?.path || null)
+  })
 
   return {
     lyrics,

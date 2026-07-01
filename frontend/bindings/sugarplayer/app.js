@@ -49,6 +49,15 @@ export function OpenImageFile() {
 }
 
 /**
+ * OpenInExplorer opens the file explorer and selects the given path.
+ * @param {string} path
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenInExplorer(path) {
+    return $Call.ByID(1095611661, path);
+}
+
+/**
  * OpenMusicFiles opens a file dialog for selecting multiple music files.
  * @returns {$CancellablePromise<string[] | null>}
  */

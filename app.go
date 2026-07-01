@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os/exec"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -35,4 +36,9 @@ func (a *App) ServiceName() string {
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
+}
+
+// OpenInExplorer opens the file explorer and selects the given path.
+func (a *App) OpenInExplorer(path string) error {
+	return exec.Command("explorer", "/select,"+path).Start()
 }

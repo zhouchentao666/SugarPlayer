@@ -15,6 +15,11 @@ import * as $models from "./models.js";
  */
 
 /**
+ * ConfigLocalMetadata stores user-edited metadata overrides for a song.
+ * @typedef {$models.ConfigLocalMetadata} ConfigLocalMetadata
+ */
+
+/**
  * ConfigPlayback represents the last playback state.
  * @typedef {$models.ConfigPlayback} ConfigPlayback
  */
@@ -22,6 +27,11 @@ import * as $models from "./models.js";
 /**
  * ConfigPlaylist represents a playlist in persisted config.
  * @typedef {$models.ConfigPlaylist} ConfigPlaylist
+ */
+
+/**
+ * ConfigPlaylistSort stores sort settings for a single playlist.
+ * @typedef {$models.ConfigPlaylistSort} ConfigPlaylistSort
  */
 
 /**

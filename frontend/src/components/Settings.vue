@@ -46,6 +46,11 @@ const qualities = [
 
 const accentColors = ['#0078d4', '#107c10', '#ff8c00', '#d13438', '#881798', '#00b7c3']
 
+const fullScreenBackgrounds = [
+  { value: 'static', label: '静态' },
+  { value: 'dynamic', label: '动态' },
+] as const
+
 function handleQualityChange(event: Event) {
   const value = (event.target as HTMLSelectElement).value as AppSettings['quality']
   update({ quality: value })
@@ -97,6 +102,22 @@ function handleQualityChange(event: Event) {
       </SettingCard>
 
       <WindowEffectSettings :settings="settings" @update="update" />
+
+      <SettingCard title="全屏播放器">
+        <SettingRow label="背景效果" description="选择全屏播放器的背景效果">
+          <SegmentedControl
+            :options="fullScreenBackgrounds"
+            :model-value="settings.fullScreenBackground"
+            @update:model-value="value => update({ fullScreenBackground: value as AppSettings['fullScreenBackground'] })"
+          />
+        </SettingRow>
+        <SettingRow label="沉浸式播放栏" description="鼠标移开时淡化播放栏中间与右侧，移入时恢复显示">
+          <ToggleSwitch
+            :model-value="settings.immersivePlayerBar"
+            @update:model-value="value => update({ immersivePlayerBar: value })"
+          />
+        </SettingRow>
+      </SettingCard>
 
       <SettingCard title="窗口">
         <SettingRow label="重启后保存窗口位置和大小" description="退出时记住窗口的位置与尺寸">

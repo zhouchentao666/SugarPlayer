@@ -33,20 +33,40 @@ type ConfigPlaylist struct {
 	Folders []string     `json:"folders"`
 }
 
+// ConfigPlaylistSort stores sort settings for a single playlist.
+type ConfigPlaylistSort struct {
+	Mode  string `json:"mode"`
+	Order string `json:"order"`
+}
+
+// ConfigLocalMetadata stores user-edited metadata overrides for a song.
+type ConfigLocalMetadata struct {
+	Title  string `json:"title"`
+	Artist string `json:"artist"`
+	Album  string `json:"album"`
+	Cover  string `json:"cover"`
+	Lyrics string `json:"lyrics"`
+}
+
 // ConfigSettings represents app settings in persisted config.
 type ConfigSettings struct {
-	Theme               string  `json:"theme"`
-	AccentColor         string  `json:"accentColor"`
-	Quality             string  `json:"quality"`
-	Autoplay            bool    `json:"autoplay"`
-	SavePlaylistAndSong bool    `json:"savePlaylistAndSong"`
-	SaveWindowPosition  bool    `json:"saveWindowPosition"`
-	WindowEffect        string  `json:"windowEffect"`
-	CustomImagePath     string  `json:"customImagePath"`
-	CustomImageOpacity  float64 `json:"customImageOpacity"`
-	CustomImageBlur     float64 `json:"customImageBlur"`
-	SongColorOpacity    float64 `json:"songColorOpacity"`
-	SongColorBlur       float64 `json:"songColorBlur"`
+	Theme                string                         `json:"theme"`
+	AccentColor          string                         `json:"accentColor"`
+	Quality              string                         `json:"quality"`
+	Autoplay             bool                           `json:"autoplay"`
+	SavePlaylistAndSong  bool                           `json:"savePlaylistAndSong"`
+	SaveWindowPosition   bool                           `json:"saveWindowPosition"`
+	WindowEffect         string                         `json:"windowEffect"`
+	CustomImagePath      string                         `json:"customImagePath"`
+	CustomImageOpacity   float64                        `json:"customImageOpacity"`
+	CustomImageBlur      float64                        `json:"customImageBlur"`
+	SongColorOpacity     float64                        `json:"songColorOpacity"`
+	SongColorBlur        float64                        `json:"songColorBlur"`
+	FullScreenBackground string                         `json:"fullScreenBackground"`
+	ImmersivePlayerBar   bool                           `json:"immersivePlayerBar"`
+	SelectedPlaylistID   string                         `json:"selectedPlaylistId"`
+	PlaylistSorts        map[string]ConfigPlaylistSort  `json:"playlistSorts"`
+	LocalMetadata        map[string]ConfigLocalMetadata `json:"localMetadata"`
 }
 
 // ConfigPlayback represents the last playback state.

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Events } from '@wailsio/runtime'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
@@ -14,13 +14,19 @@ import { useLyrics } from './composables/useLyrics'
 import { useWindowEffect } from './composables/useWindowEffect'
 import { useSession } from './composables/useSession'
 import PlayQueue from './components/player/PlayQueue.vue'
+import SongEditor from './components/SongEditor.vue'
 import type { PlayMode } from './components/player/PlayerControls.vue'
+import type { Song } from './types'
+import type { SortMode, SortOrder } from './composables/usePlaylistView'
+import { localMetadata } from './composables/useLocalMetadata'
 
 const view = ref<'main' | 'settings'>('main')
 const isLoading = ref(true)
 const audioRef = ref<HTMLAudioElement | null>(null)
 const showPlayerDetail = ref(false)
 const showQueue = ref(false)
+const showSongEditor = ref(false)
+const editingSong = ref<Song | null>(null)
 const playMode = ref<PlayMode>('sequential')
 const settings = ref<AppSettings>({
   theme: 'system',
@@ -35,6 +41,11 @@ const settings = ref<AppSettings>({
   customImageBlur: 20,
   songColorOpacity: 45,
   songColorBlur: 30,
+  fullScreenBackground: 'static',
+  immersivePlayerBar: false,
+  selectedPlaylistId: '',
+  playlistSorts: {},
+  localMetadata: {},
 })
 
 const playbackState = ref<ConfigPlayback>({
@@ -52,6 +63,7 @@ const windowState = ref<ConfigWindow>({
 
 const { playlists, selectedId, updatePlaylists, updatePlaylist, selectPlaylist, addMusicFiles, addMusicFolder, refreshFolder, rewatchFolders, addSongs, replaceSongs } = usePlaylists()
 const currentPlaylist = computed(() => playlists.value.find(p => p.id === selectedId.value))
+const currentPlaylistSort = computed(() => currentPlaylist.value ? settings.value.playlistSorts[currentPlaylist.value.id] : undefined)
 
 const { save, load } = useConfig(playlists, settings, playbackState, windowState, isLoading)
 
@@ -144,7 +156,27 @@ const { handleClose, restoreSession } = useSession(settings, playbackState, wind
 
 function onSelectPlaylist(id: string) {
   selectPlaylist(id)
+  settings.value.selectedPlaylistId = id
   view.value = 'main'
+}
+
+watch(selectedId, (id) => {
+  if (id) settings.value.selectedPlaylistId = id
+})
+
+function handleDropSongs(payload: { targetPlaylistId: string; sourcePlaylistId: string; songIds: string[] }) {
+  const source = playlists.value.find(p => p.id === payload.sourcePlaylistId)
+  if (!source) return
+  const songs = payload.songIds
+    .map(id => source.songs.find(s => s.id === id))
+    .filter((s): s is Song => Boolean(s))
+  if (songs.length) addSongs(payload.targetPlaylistId, songs)
+}
+
+function handleUpdateSort(payload: { playlistId: string; mode: SortMode; order: SortOrder }) {
+  const next = { ...settings.value.playlistSorts }
+  next[payload.playlistId] = { mode: payload.mode, order: payload.order }
+  settings.value.playlistSorts = next
 }
 
 function togglePlayerDetail() {
@@ -160,10 +192,24 @@ function toggleQueue() {
   showQueue.value = !showQueue.value
 }
 
+function handleEditSong(song: Song) {
+  editingSong.value = song
+  showSongEditor.value = true
+}
+
+function closeSongEditor() {
+  showSongEditor.value = false
+  editingSong.value = null
+}
+
 let offFolderChanged: (() => void) | null = null
 
 onMounted(async () => {
   await load()
+  localMetadata.value = settings.value.localMetadata
+  if (settings.value.selectedPlaylistId && playlists.value.some(p => p.id === settings.value.selectedPlaylistId)) {
+    selectPlaylist(settings.value.selectedPlaylistId)
+  }
   await rewatchFolders()
   await restoreSession()
   offFolderChanged = Events.On('folder:changed', (event: any) => {
@@ -198,6 +244,7 @@ onUnmounted(() => {
         @update:selected-id="selectedId = $event"
         @open-settings="view = 'settings'"
         @select="onSelectPlaylist"
+        @drop-songs="handleDropSongs"
       />
       <main class="main">
         <PlaylistView
@@ -205,12 +252,15 @@ onUnmounted(() => {
           :playlist="currentPlaylist"
           :playlists="playlists"
           :current-song="audio.currentSong.value"
+          :initial-sort="currentPlaylistSort"
           @update:playlist="updatePlaylist"
           @add-music-files="currentPlaylist && addMusicFiles(currentPlaylist.id)"
           @add-music-folder="currentPlaylist && addMusicFolder(currentPlaylist.id)"
           @play-song="playCurrentSong"
           @add-to-playlist="addSongs"
           @replace-to-playlist="replaceSongs"
+          @update-sort="handleUpdateSort"
+          @edit="handleEditSong"
         />
         <Settings
           v-if="view === 'settings'"
@@ -230,6 +280,7 @@ onUnmounted(() => {
       :playback-rate="audio.playbackRate.value"
       :show-detail="showPlayerDetail"
       :play-mode="playMode"
+      :immersive="settings.immersivePlayerBar"
       @toggle-play="handleTogglePlay"
       @prev="playPrev"
       @next="playNext"
@@ -248,6 +299,8 @@ onUnmounted(() => {
       :lyrics="lyrics.lyrics.value"
       :has-lyrics="lyrics.hasLyrics.value"
       :current-time="lyricTime"
+      :background-mode="settings.fullScreenBackground"
+      :immersive-player-bar="settings.immersivePlayerBar"
       @close="togglePlayerDetail"
       @seek="audio.seek"
     />
@@ -257,6 +310,11 @@ onUnmounted(() => {
       :current-song="audio.currentSong.value"
       @close="showQueue = false"
       @play="playCurrentSong"
+    />
+    <SongEditor
+      v-if="showSongEditor && editingSong"
+      :song="editingSong"
+      @close="closeSongEditor"
     />
     <audio ref="audioRef" style="display: none;"></audio>
   </div>

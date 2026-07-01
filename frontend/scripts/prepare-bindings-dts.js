@@ -16,6 +16,7 @@ export function AudioServerURL(): CancellablePromise<string>;
 export function Greet(name: string): CancellablePromise<string>;
 export function LoadConfig(): CancellablePromise<models.AppConfig>;
 export function OpenImageFile(): CancellablePromise<string>;
+export function OpenInExplorer(path: string): CancellablePromise<void>;
 export function OpenMusicFiles(): CancellablePromise<string[]>;
 export function OpenMusicFolder(): CancellablePromise<string>;
 export function ReadAudioFile(path: string): CancellablePromise<string>;
@@ -44,6 +45,19 @@ export interface ConfigPlaylist {
   folders: string[] | null;
 }
 
+export interface ConfigPlaylistSort {
+  mode: string;
+  order: string;
+}
+
+export interface ConfigLocalMetadata {
+  title?: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+  lyrics?: string;
+}
+
 export interface ConfigSettings {
   theme: string;
   accentColor: string;
@@ -57,6 +71,11 @@ export interface ConfigSettings {
   customImageBlur: number;
   songColorOpacity: number;
   songColorBlur: number;
+  fullScreenBackground: string;
+  immersivePlayerBar: boolean;
+  selectedPlaylistId: string;
+  playlistSorts: Record<string, ConfigPlaylistSort>;
+  localMetadata: Record<string, ConfigLocalMetadata>;
 }
 
 export interface ConfigPlayback {

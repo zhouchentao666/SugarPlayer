@@ -12,6 +12,16 @@
  */
 
 /**
+ * ConfigLocalMetadata stores user-edited metadata overrides for a song.
+ * @typedef {Object} ConfigLocalMetadata
+ * @property {string} title
+ * @property {string} artist
+ * @property {string} album
+ * @property {string} cover
+ * @property {string} lyrics
+ */
+
+/**
  * ConfigPlayback represents the last playback state.
  * @typedef {Object} ConfigPlayback
  * @property {string} playlistId
@@ -29,6 +39,13 @@
  */
 
 /**
+ * ConfigPlaylistSort stores sort settings for a single playlist.
+ * @typedef {Object} ConfigPlaylistSort
+ * @property {string} mode
+ * @property {string} order
+ */
+
+/**
  * ConfigSettings represents app settings in persisted config.
  * @typedef {Object} ConfigSettings
  * @property {string} theme
@@ -43,6 +60,11 @@
  * @property {number} customImageBlur
  * @property {number} songColorOpacity
  * @property {number} songColorBlur
+ * @property {string} fullScreenBackground
+ * @property {boolean} immersivePlayerBar
+ * @property {string} selectedPlaylistId
+ * @property {{ [_ in string]?: ConfigPlaylistSort } | null} playlistSorts
+ * @property {{ [_ in string]?: ConfigLocalMetadata } | null} localMetadata
  */
 
 /**

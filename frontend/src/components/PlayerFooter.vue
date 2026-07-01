@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { type Song } from '../types'
+import { ref } from 'vue'
 import ProgressBar from './player/ProgressBar.vue'
 import SongInfo from './player/SongInfo.vue'
 import PlayerControls, { type PlayMode } from './player/PlayerControls.vue'
@@ -16,7 +17,10 @@ defineProps<{
   playbackRate: number
   showDetail?: boolean
   playMode: PlayMode
+  immersive?: boolean
 }>()
+
+const isHovered = ref(false)
 
 const emit = defineEmits<{
   (e: 'toggle-play'): void
@@ -41,7 +45,9 @@ function formatDuration(seconds: number): string {
 <template>
   <footer
     class="player-footer"
-    :class="{ 'detail-mode': showDetail }"
+    :class="{ 'detail-mode': showDetail, immersive: immersive }"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
     <ProgressBar
       :current-time="currentTime"
@@ -59,7 +65,7 @@ function formatDuration(seconds: number): string {
         />
       </div>
 
-      <div class="section center">
+      <div class="section center" :class="{ faded: immersive && !isHovered }">
         <PlayerControls
           :is-playing="isPlaying"
           :play-mode="playMode"
@@ -71,7 +77,7 @@ function formatDuration(seconds: number): string {
         />
       </div>
 
-      <div class="section right">
+      <div class="section right" :class="{ faded: immersive && !isHovered }">
         <span class="time-label">{{ formatDuration(currentTime) }} / {{ formatDuration(duration || 0) }}</span>
         <VolumeControl :volume="volume" @set-volume="v => emit('set-volume', v)" />
         <PlaybackRateControl :playback-rate="playbackRate" @set-playback-rate="r => emit('set-playback-rate', r)" />
@@ -151,5 +157,16 @@ function formatDuration(seconds: number): string {
   color: var(--fluent-text-secondary);
   font-variant-numeric: tabular-nums;
   transition: color 500ms ease;
+}
+
+.section.center,
+.section.right {
+  transition: opacity 300ms ease;
+}
+
+.player-footer.immersive .section.center.faded,
+.player-footer.immersive .section.right.faded {
+  opacity: 0;
+  pointer-events: none;
 }
 </style>

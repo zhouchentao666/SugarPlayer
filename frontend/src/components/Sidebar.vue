@@ -15,6 +15,7 @@ const emit = defineEmits<{
   (e: 'update:selectedId', id: string): void
   (e: 'open-settings'): void
   (e: 'select', id: string): void
+  (e: 'drop-songs', payload: { targetPlaylistId: string; sourcePlaylistId: string; songIds: string[] }): void
 }>()
 
 const isCreating = ref(false)
@@ -68,6 +69,10 @@ function confirmCreate(name: string) {
 function cancelCreate() {
   isCreating.value = false
 }
+
+function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; songIds: string[] }) {
+  emit('drop-songs', { targetPlaylistId: playlistId, ...payload })
+}
 </script>
 
 <template>
@@ -83,6 +88,7 @@ function cancelCreate() {
           @select="onSelect"
           @rename="onRename"
           @delete="onDelete"
+          @drop-songs="payload => onDropSongs(playlist.id, payload)"
         />
       </ul>
       <PlaylistCreateInput

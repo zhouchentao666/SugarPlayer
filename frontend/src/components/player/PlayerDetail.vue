@@ -16,6 +16,8 @@ const props = defineProps<{
   lyrics: LyricLine[]
   hasLyrics: boolean
   currentTime: number
+  backgroundMode?: 'static' | 'dynamic'
+  immersivePlayerBar?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -36,7 +38,7 @@ const {
   minimize,
   toggleMaximize,
   closeApp,
-} = usePlayerDetail()
+} = usePlayerDetail(computed(() => props.immersivePlayerBar ?? false))
 
 const detailLeftRef = ref<InstanceType<typeof PlayerDetailLeft> | null>(null)
 const isVisible = ref(false)
@@ -111,7 +113,12 @@ watch(() => props.show, async (visible) => {
         class="bg-wrapper"
         :style="{ opacity: bgOpacity }"
       >
-        <PlayerDetailBackground :cover-url="props.coverUrl" :active="isVisible" />
+        <PlayerDetailBackground
+          :cover-url="props.coverUrl"
+          :active="isVisible"
+          :background-mode="props.backgroundMode ?? 'static'"
+          :has-lyrics="props.hasLyrics"
+        />
         <div class="bg-fallback"></div>
       </div>
 

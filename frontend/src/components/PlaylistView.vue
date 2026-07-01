@@ -1,16 +1,16 @@
 <script lang="ts" setup>
-import { toRaw, computed } from 'vue'
+import { toRaw, computed, ref, watch } from 'vue'
 import type { Playlist, Song } from '../types'
-import { usePlaylistView } from '../composables/usePlaylistView'
+import { usePlaylistView, type SortMode, type SortOrder } from '../composables/usePlaylistView'
 import PlaylistViewToolbar from './PlaylistViewToolbar.vue'
 import PlaylistViewList from './PlaylistViewList.vue'
-import PlaylistViewGrid from './PlaylistViewGrid.vue'
 import PlaylistBatchBar from './PlaylistBatchBar.vue'
 
 const props = defineProps<{
   playlist: Playlist
   playlists: Playlist[]
   currentSong: Song | null
+  initialSort?: { mode: SortMode; order: SortOrder }
 }>()
 
 const emit = defineEmits<{
@@ -20,12 +20,14 @@ const emit = defineEmits<{
   (e: 'play-song', index: number): void
   (e: 'add-to-playlist', playlistId: string, songs: Song[]): void
   (e: 'replace-to-playlist', playlistId: string, songs: Song[]): void
+  (e: 'update-sort', payload: { playlistId: string; mode: SortMode; order: SortOrder }): void
+  (e: 'edit', song: Song): void
 }>()
 
 const {
   searchQuery,
   sortMode,
-  viewMode,
+  sortOrder,
   batchMode,
   selectedIds,
   displaySongs,
@@ -38,15 +40,37 @@ const {
   exitBatchMode,
 } = usePlaylistView(computed(() => props.playlist))
 
+const skipSortEmit = ref(false)
+
+watch(() => props.initialSort, (saved) => {
+  if (saved && (saved.mode !== sortMode.value || saved.order !== sortOrder.value)) {
+    skipSortEmit.value = true
+    sortMode.value = saved.mode
+    sortOrder.value = saved.order
+  }
+}, { immediate: true })
+
+watch([sortMode, sortOrder], () => {
+  if (skipSortEmit.value) {
+    skipSortEmit.value = false
+    return
+  }
+  emit('update-sort', { playlistId: props.playlist.id, mode: sortMode.value, order: sortOrder.value })
+})
+
+function updateSongs(songs: Song[]) {
+  emit('update:playlist', { ...props.playlist, songs })
+}
+
 function removeSong(id: string) {
   const songs = props.playlist.songs.filter(song => song.id !== id)
-  emit('update:playlist', { ...props.playlist, songs })
+  updateSongs(songs)
 }
 
 function removeSelected() {
   const ids = new Set(selectedIds.value)
   const songs = props.playlist.songs.filter(song => !ids.has(song.id))
-  emit('update:playlist', { ...props.playlist, songs })
+  updateSongs(songs)
   clearSelection()
 }
 
@@ -69,6 +93,18 @@ function handleReplaceToPlaylist(playlistId: string) {
   emit('replace-to-playlist', playlistId, toRaw(selectedSongs.value))
   exitBatchMode()
 }
+
+function handleAddSingleToPlaylist(playlistId: string, song: Song) {
+  emit('add-to-playlist', playlistId, [song])
+}
+
+function handleEdit(song: Song) {
+  emit('edit', song)
+}
+
+function handleReorder(songs: Song[]) {
+  updateSongs(songs)
+}
 </script>
 
 <template>
@@ -90,7 +126,7 @@ function handleReplaceToPlaylist(playlistId: string) {
         <PlaylistViewToolbar
           v-model:search-query="searchQuery"
           v-model:sort-mode="sortMode"
-          v-model:view-mode="viewMode"
+          v-model:sort-order="sortOrder"
           :batch-mode="batchMode"
           :sort-labels="sortLabels"
           @toggle-batch="batchMode = !batchMode"
@@ -99,24 +135,20 @@ function handleReplaceToPlaylist(playlistId: string) {
     </header>
 
     <PlaylistViewList
-      v-if="viewMode === 'list'"
       :songs="displaySongs"
+      :playlists="props.playlists"
       :current-song="props.currentSong"
       :selected-ids="selectedIds"
       :batch-mode="batchMode"
+      :playlist-id="props.playlist.id"
+      :sort-mode="sortMode"
+      :search-query="searchQuery"
       @play="playSong"
       @toggle="toggleSelection"
       @remove="removeSong"
-    />
-    <PlaylistViewGrid
-      v-else
-      :songs="displaySongs"
-      :current-song="props.currentSong"
-      :selected-ids="selectedIds"
-      :batch-mode="batchMode"
-      @play="playSong"
-      @toggle="toggleSelection"
-      @remove="removeSong"
+      @reorder="handleReorder"
+      @edit="handleEdit"
+      @add-to-playlist="handleAddSingleToPlaylist"
     />
 
     <PlaylistBatchBar

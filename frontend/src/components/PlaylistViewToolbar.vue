@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import type { SortMode, ViewMode } from '../composables/usePlaylistView'
+import { ref, nextTick } from 'vue'
+import type { SortMode, SortOrder } from '../composables/usePlaylistView'
 
 const props = defineProps<{
   searchQuery: string
   sortMode: SortMode
-  viewMode: ViewMode
+  sortOrder: SortOrder
   batchMode: boolean
   sortLabels: Record<SortMode, string>
 }>()
@@ -12,27 +13,45 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:searchQuery': [value: string]
   'update:sortMode': [value: SortMode]
-  'update:viewMode': [value: ViewMode]
+  'update:sortOrder': [value: SortOrder]
   'toggle-batch': []
 }>()
+
+const showSearch = ref(false)
+const showSortMenu = ref(false)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+
+function toggleSearch() {
+  showSearch.value = !showSearch.value
+  if (showSearch.value) {
+    nextTick(() => searchInputRef.value?.focus())
+  } else {
+    emit('update:searchQuery', '')
+  }
+}
 
 function updateSearch(e: Event) {
   emit('update:searchQuery', (e.target as HTMLInputElement).value)
 }
 
-function updateSort(e: Event) {
-  emit('update:sortMode', (e.target as HTMLSelectElement).value as SortMode)
+function selectSort(mode: SortMode) {
+  emit('update:sortMode', mode)
+  if (mode === 'custom') {
+    showSortMenu.value = false
+  }
 }
 
-function setView(mode: ViewMode) {
-  emit('update:viewMode', mode)
+function selectOrder(order: SortOrder) {
+  emit('update:sortOrder', order)
+  showSortMenu.value = false
 }
 </script>
 
 <template>
   <div class="toolbar">
-    <div class="search-box">
+    <div v-if="showSearch" class="search-box">
       <input
+        ref="searchInputRef"
         type="text"
         class="search-input"
         placeholder="搜索歌曲、艺术家、专辑"
@@ -40,44 +59,89 @@ function setView(mode: ViewMode) {
         @input="updateSearch"
       />
     </div>
-    <select
-      class="control-select"
-      :value="props.sortMode"
-      @change="updateSort"
-    >
-      <option
-        v-for="(label, mode) in props.sortLabels"
-        :key="mode"
-        :value="mode"
-      >
-        {{ label }}
-      </option>
-    </select>
-    <div class="view-toggle">
+
+    <div class="icon-group">
       <button
-        class="view-btn"
-        :class="{ active: props.viewMode === 'list' }"
-        title="列表视图"
-        @click="setView('list')"
+        class="icon-btn"
+        :class="{ active: props.batchMode }"
+        title="批量选择"
+        @click="emit('toggle-batch')"
       >
-        列表
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
       </button>
+
+      <div class="sort-menu-wrapper">
+        <button
+          class="icon-btn"
+          :class="{ active: showSortMenu }"
+          title="排序"
+          @click="showSortMenu = !showSortMenu"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 8 4-4 4 4" />
+            <path d="M7 4v16" />
+            <path d="m11 16 4 4 4-4" />
+            <path d="M15 20V4" />
+          </svg>
+        </button>
+
+        <div v-if="showSortMenu" class="sort-dropdown">
+          <div
+            v-for="(label, mode) in props.sortLabels"
+            :key="mode"
+            class="sort-option"
+            :class="{ active: props.sortMode === mode }"
+            @click="selectSort(mode)"
+          >
+            <span class="check">
+              <svg v-if="props.sortMode === mode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <span>{{ label }}</span>
+          </div>
+          <div class="divider"></div>
+          <div
+            class="sort-option"
+            :class="{ active: props.sortOrder === 'asc' }"
+            @click="selectOrder('asc')"
+          >
+            <span class="check">
+              <svg v-if="props.sortOrder === 'asc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <span>升序</span>
+          </div>
+          <div
+            class="sort-option"
+            :class="{ active: props.sortOrder === 'desc' }"
+            @click="selectOrder('desc')"
+          >
+            <span class="check">
+              <svg v-if="props.sortOrder === 'desc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <span>降序</span>
+          </div>
+        </div>
+      </div>
+
       <button
-        class="view-btn"
-        :class="{ active: props.viewMode === 'grid' }"
-        title="网格视图"
-        @click="setView('grid')"
+        class="icon-btn"
+        :class="{ active: showSearch }"
+        title="搜索"
+        @click="toggleSearch"
       >
-        网格
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
       </button>
     </div>
-    <button
-      class="batch-btn"
-      :class="{ active: props.batchMode }"
-      @click="emit('toggle-batch')"
-    >
-      {{ props.batchMode ? '完成' : '批量' }}
-    </button>
   </div>
 </template>
 
@@ -113,53 +177,86 @@ function setView(mode: ViewMode) {
   background: var(--fluent-bg-card);
 }
 
-.control-select {
-  padding: 7px 10px;
-  border: 1px solid var(--fluent-border);
-  border-radius: 8px;
-  background: var(--fluent-bg-glass);
-  color: var(--fluent-text);
-  font-size: 13px;
-  cursor: pointer;
-  outline: none;
-}
-
-.view-toggle {
+.icon-group {
   display: flex;
-  border: 1px solid var(--fluent-border);
-  border-radius: 8px;
-  overflow: hidden;
+  align-items: center;
+  gap: 6px;
 }
 
-.view-btn {
-  padding: 7px 12px;
-  border: none;
-  background: transparent;
-  color: var(--fluent-text-secondary);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.view-btn.active {
-  background: var(--fluent-bg-active);
-  color: var(--fluent-text);
-}
-
-.batch-btn {
-  padding: 7px 14px;
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--fluent-border);
   border-radius: 8px;
   background: var(--fluent-bg-glass);
-  color: var(--fluent-text);
-  font-size: 13px;
+  color: var(--fluent-text-secondary);
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
-.batch-btn.active {
+.icon-btn:hover {
+  background: var(--fluent-bg-hover);
+  color: var(--fluent-text);
+}
+
+.icon-btn.active {
   border-color: var(--fluent-accent);
   background: var(--fluent-accent);
   color: #fff;
+}
+
+.sort-menu-wrapper {
+  position: relative;
+}
+
+.sort-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 140px;
+  padding: 6px;
+  border: 1px solid var(--fluent-border);
+  border-radius: 10px;
+  background: var(--fluent-bg-card);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  z-index: 20;
+}
+
+.sort-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--fluent-text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sort-option:hover {
+  background: var(--fluent-bg-hover);
+}
+
+.sort-option.active {
+  color: var(--fluent-accent);
+}
+
+.check {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.divider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--fluent-border);
 }
 </style>

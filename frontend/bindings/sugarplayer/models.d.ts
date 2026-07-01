@@ -12,6 +12,19 @@ export interface ConfigPlaylist {
   folders: string[] | null;
 }
 
+export interface ConfigPlaylistSort {
+  mode: string;
+  order: string;
+}
+
+export interface ConfigLocalMetadata {
+  title?: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+  lyrics?: string;
+}
+
 export interface ConfigSettings {
   theme: string;
   accentColor: string;
@@ -25,6 +38,11 @@ export interface ConfigSettings {
   customImageBlur: number;
   songColorOpacity: number;
   songColorBlur: number;
+  fullScreenBackground: string;
+  immersivePlayerBar: boolean;
+  selectedPlaylistId: string;
+  playlistSorts: Record<string, ConfigPlaylistSort>;
+  localMetadata: Record<string, ConfigLocalMetadata>;
 }
 
 export interface ConfigPlayback {

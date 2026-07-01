@@ -11,11 +11,13 @@ const emit = defineEmits<{
   (e: 'select', id: string): void
   (e: 'rename', id: string, name: string): void
   (e: 'delete', id: string): void
+  (e: 'drop-songs', payload: { sourcePlaylistId: string; songIds: string[] }): void
 }>()
 
 const isEditing = ref(false)
 const editName = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
+const isDragOver = ref(false)
 
 function startRename() {
   isEditing.value = true
@@ -44,12 +46,37 @@ function onClick() {
   if (isEditing.value) return
   emit('select', props.playlist.id)
 }
+
+function onDragOver(e: DragEvent) {
+  const types = e.dataTransfer?.types || []
+  if (!types.includes('application/sugarplayer-song')) return
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+  isDragOver.value = true
+}
+
+function onDragLeave() {
+  isDragOver.value = false
+}
+
+function onDrop(e: DragEvent) {
+  isDragOver.value = false
+  const raw = e.dataTransfer?.getData('application/sugarplayer-song')
+  if (!raw) return
+  const { songId, sourcePlaylistId } = JSON.parse(raw) as { songId: string; sourcePlaylistId: string }
+  if (sourcePlaylistId === props.playlist.id) return
+  e.preventDefault()
+  emit('drop-songs', { sourcePlaylistId, songIds: [songId] })
+}
 </script>
 
 <template>
   <li
-    :class="['playlist-item', { active: selected }]"
+    :class="['playlist-item', { active: selected, 'drag-over': isDragOver }]"
     @click="onClick"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
   >
     <template v-if="isEditing">
       <input
@@ -102,6 +129,12 @@ function onClick() {
 
 .playlist-item.active {
   background: var(--fluent-bg-active);
+}
+
+.playlist-item.drag-over {
+  background: var(--fluent-bg-active);
+  outline: 1px dashed var(--fluent-accent);
+  outline-offset: -2px;
 }
 
 .playlist-item .icon {

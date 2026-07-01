@@ -1,6 +1,7 @@
-import { ref, computed, nextTick, onMounted, onUnmounted, type Ref } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch, type Ref } from 'vue'
 import { ReadCoverArt, AudioServerURL } from '../../bindings/sugarplayer/app'
 import { type Song } from '../types'
+import { localMetadata } from './useLocalMetadata'
 
 interface AudioPlayerOptions {
   audioRef?: Ref<HTMLAudioElement | null>
@@ -24,12 +25,21 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
   const hasSong = computed(() => currentSong.value !== null)
 
   async function loadCover(path: string) {
+    const override = localMetadata.value[path]?.cover
+    if (override) {
+      coverUrl.value = override
+      return
+    }
     try {
       coverUrl.value = await ReadCoverArt(path)
     } catch {
       coverUrl.value = null
     }
   }
+
+  watch(() => localMetadata.value[currentSong.value?.path ?? '']?.cover, () => {
+    if (currentSong.value) loadCover(currentSong.value.path)
+  })
 
   async function audioUrl(path: string): Promise<string> {
     if (!serverUrl.value) {

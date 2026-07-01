@@ -1,21 +1,55 @@
 import { ref, computed, watch, type Ref } from 'vue'
 import type { Playlist, Song } from '../types'
 
-export type SortMode = 'default' | 'title' | 'artist' | 'album' | 'duration'
-export type ViewMode = 'list' | 'grid'
+export type SortMode = 'custom' | 'title' | 'filename' | 'artist' | 'album' | 'duration' | 'year' | 'folder'
+export type SortOrder = 'asc' | 'desc'
 
 const sortLabels: Record<SortMode, string> = {
-  default: '默认排序',
-  title: '按标题',
-  artist: '按艺术家',
-  album: '按专辑',
-  duration: '按时长',
+  custom: '自定义',
+  title: '标题',
+  filename: '文件名',
+  artist: '艺术家',
+  album: '专辑',
+  duration: '时长',
+  year: '年份',
+  folder: '文件夹',
+}
+
+function filename(path: string) {
+  return path.replace(/\\/g, '/').split('/').pop() || path
+}
+
+function folder(path: string) {
+  const parts = path.replace(/\\/g, '/').split('/')
+  parts.pop()
+  return parts.join('/') || path
+}
+
+function sortValue(song: Song, mode: SortMode): string | number {
+  switch (mode) {
+    case 'title':
+      return song.metadata?.title || song.title || ''
+    case 'filename':
+      return filename(song.path)
+    case 'artist':
+      return song.metadata?.artist || ''
+    case 'album':
+      return song.metadata?.album || ''
+    case 'duration':
+      return song.metadata?.duration ?? 0
+    case 'year':
+      return song.metadata?.year || ''
+    case 'folder':
+      return folder(song.path)
+    default:
+      return ''
+  }
 }
 
 export function usePlaylistView(playlist: Ref<Playlist>) {
   const searchQuery = ref('')
-  const sortMode = ref<SortMode>('default')
-  const viewMode = ref<ViewMode>('list')
+  const sortMode = ref<SortMode>('custom')
+  const sortOrder = ref<SortOrder>('asc')
   const batchMode = ref(false)
   const selectedIds = ref<Set<string>>(new Set())
 
@@ -29,6 +63,7 @@ export function usePlaylistView(playlist: Ref<Playlist>) {
           song.metadata?.artist,
           song.metadata?.album,
           song.title,
+          filename(song.path),
         ]
           .filter(Boolean)
           .join(' ')
@@ -36,19 +71,16 @@ export function usePlaylistView(playlist: Ref<Playlist>) {
         return text.includes(query)
       })
     }
-    switch (sortMode.value) {
-      case 'title':
-        songs.sort((a, b) => (a.metadata?.title || a.title).localeCompare(b.metadata?.title || b.title))
-        break
-      case 'artist':
-        songs.sort((a, b) => (a.metadata?.artist || '').localeCompare(b.metadata?.artist || ''))
-        break
-      case 'album':
-        songs.sort((a, b) => (a.metadata?.album || '').localeCompare(b.metadata?.album || ''))
-        break
-      case 'duration':
-        songs.sort((a, b) => (a.metadata?.duration ?? 0) - (b.metadata?.duration ?? 0))
-        break
+    if (sortMode.value !== 'custom') {
+      const order = sortOrder.value === 'asc' ? 1 : -1
+      songs.sort((a, b) => {
+        const av = sortValue(a, sortMode.value)
+        const bv = sortValue(b, sortMode.value)
+        if (typeof av === 'number' && typeof bv === 'number') {
+          return (av - bv) * order
+        }
+        return String(av).localeCompare(String(bv), undefined, { numeric: true }) * order
+      })
     }
     return songs
   })
@@ -86,7 +118,7 @@ export function usePlaylistView(playlist: Ref<Playlist>) {
   return {
     searchQuery,
     sortMode,
-    viewMode,
+    sortOrder,
     batchMode,
     selectedIds,
     displaySongs,

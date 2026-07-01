@@ -1,8 +1,8 @@
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, unref, type MaybeRef } from 'vue'
 import { Window, Application } from '@wailsio/runtime'
 import { useSharedTransition, bgOpacity, staggerPhase } from './useSharedTransition'
 
-export function usePlayerDetail() {
+export function usePlayerDetail(autoHideTopChrome: MaybeRef<boolean> = false) {
   const { captureFirst, playEnter, playLeave, cancel } = useSharedTransition()
   const isMaximised = ref(false)
 
@@ -40,7 +40,9 @@ export function usePlayerDetail() {
   }
 
   const handleTopChromeLeave = () => {
-    scheduleTopChromeHide()
+    if (unref(autoHideTopChrome)) {
+      scheduleTopChromeHide()
+    }
   }
 
   const runEnterTransition = async (detailCover: HTMLElement | null | undefined) => {

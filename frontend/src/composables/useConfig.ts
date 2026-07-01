@@ -1,8 +1,16 @@
 import { ref, watch, type Ref } from 'vue'
 import { SaveConfig, LoadConfig } from '../../bindings/sugarplayer/app'
 import { type Playlist } from '../types'
+import type { SortMode, SortOrder } from './usePlaylistView'
+import type { LocalSongMetadata } from './useLocalMetadata'
 
 export type WindowEffect = 'none' | 'acrylic' | 'custom-image' | 'song-color'
+export type FullScreenBackground = 'static' | 'dynamic'
+
+export interface PlaylistSort {
+  mode: SortMode
+  order: SortOrder
+}
 
 export interface AppSettings {
   theme: 'system' | 'light' | 'dark'
@@ -17,6 +25,11 @@ export interface AppSettings {
   customImageBlur: number
   songColorOpacity: number
   songColorBlur: number
+  fullScreenBackground: FullScreenBackground
+  immersivePlayerBar: boolean
+  selectedPlaylistId: string
+  playlistSorts: Record<string, PlaylistSort>
+  localMetadata: Record<string, LocalSongMetadata>
 }
 
 export interface ConfigPlayback {
@@ -74,6 +87,11 @@ export function useConfig(
           customImageBlur: hasEffect ? (config.settings.customImageBlur ?? 20) : 20,
           songColorOpacity: hasEffect ? (config.settings.songColorOpacity ?? 45) : 45,
           songColorBlur: hasEffect ? (config.settings.songColorBlur ?? 30) : 30,
+          fullScreenBackground: (config.settings.fullScreenBackground as FullScreenBackground) || 'static',
+          immersivePlayerBar: config.settings.immersivePlayerBar ?? false,
+          selectedPlaylistId: config.settings.selectedPlaylistId ?? '',
+          playlistSorts: (config.settings.playlistSorts as Record<string, PlaylistSort>) ?? {},
+          localMetadata: (config.settings.localMetadata as Record<string, LocalSongMetadata>) ?? {},
         }
       }
       if (config.playback) {
