@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import type { Playlist, Song } from '../../types'
+import { displayTitle, displayArtist } from '../../composables/usePlaylistDisplay'
 
 const props = defineProps<{
   show: boolean
@@ -51,8 +52,8 @@ function isActive(song: Song): boolean {
         >
           <span class="item-index">{{ index + 1 }}</span>
           <div class="item-info">
-            <div class="item-title">{{ song.metadata?.title || song.title }}</div>
-            <div class="item-artist">{{ song.metadata?.artist || '未知艺术家' }}</div>
+            <div class="item-title">{{ displayTitle(song) }}</div>
+            <div class="item-artist">{{ displayArtist(song) }}</div>
           </div>
           <span class="item-duration">{{ formatDuration(song.metadata?.duration || 0) }}</span>
         </div>

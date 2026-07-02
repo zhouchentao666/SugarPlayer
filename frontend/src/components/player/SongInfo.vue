@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { footerCoverVisible } from '../../composables/useSharedTransition'
 import { type Song } from '../../types'
+import { displayTitle, displayArtist } from '../../composables/usePlaylistDisplay'
 
 const props = defineProps<{
   song: Song | null
@@ -12,12 +13,12 @@ const emit = defineEmits<{
   click: []
 }>()
 
-function displayTitle(song: Song | null): string {
-  return song?.metadata?.title || song?.title || '未播放'
+function songTitle(song: Song | null): string {
+  return song ? displayTitle(song) : '未播放'
 }
 
-function displayArtist(song: Song | null): string {
-  return song?.metadata?.artist || '未知艺术家'
+function songArtist(song: Song | null): string {
+  return song ? displayArtist(song) : '未知艺术家'
 }
 
 function handleClick() {
@@ -44,8 +45,8 @@ function handleClick() {
       :class="{ 'detail-mode': showDetail }"
       @click="handleClick"
     >
-      <div class="song-title" :class="{ 'detail-mode': showDetail }">{{ displayTitle(song) }}</div>
-      <div class="song-artist" :class="{ 'detail-mode': showDetail }">{{ displayArtist(song) }}</div>
+      <div class="song-title" :class="{ 'detail-mode': showDetail }">{{ songTitle(song) }}</div>
+      <div class="song-artist" :class="{ 'detail-mode': showDetail }">{{ songArtist(song) }}</div>
     </div>
   </div>
 </template>

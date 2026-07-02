@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, watch, nextTick } from 'vue'
 import type { Song } from '../types'
-import { OpenImageFile, ReadImageFile } from '../../bindings/sugarplayer/app'
+import { OpenImageFile, ReadImageFile, ReadLyrics } from '../../bindings/sugarplayer/app'
 import { localMetadata, setLocalMetadata } from '../composables/useLocalMetadata'
 
 const props = defineProps<{
@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  save: []
 }>()
 
 const title = ref('')
@@ -18,14 +19,38 @@ const album = ref('')
 const cover = ref('')
 const lyrics = ref('')
 const isLoadingCover = ref(false)
+const isLoadingDefaults = ref(false)
 
-function loadFromSong() {
+const defaultTitle = ref('')
+const defaultArtist = ref('')
+const defaultAlbum = ref('')
+const defaultLyrics = ref('')
+
+function setDefaults() {
+  defaultTitle.value = props.song.metadata?.title ?? props.song.title ?? ''
+  defaultArtist.value = props.song.metadata?.artist ?? ''
+  defaultAlbum.value = props.song.metadata?.album ?? ''
+}
+
+async function loadDefaultLyrics() {
+  try {
+    defaultLyrics.value = await ReadLyrics(props.song.path)
+  } catch {
+    defaultLyrics.value = ''
+  }
+}
+
+async function loadFromSong() {
+  isLoadingDefaults.value = true
+  setDefaults()
+  await loadDefaultLyrics()
+  isLoadingDefaults.value = false
   const override = localMetadata.value[props.song.path]
-  title.value = override?.title ?? props.song.metadata?.title ?? props.song.title ?? ''
-  artist.value = override?.artist ?? props.song.metadata?.artist ?? ''
-  album.value = override?.album ?? props.song.metadata?.album ?? ''
+  title.value = override?.title ?? defaultTitle.value
+  artist.value = override?.artist ?? defaultArtist.value
+  album.value = override?.album ?? defaultAlbum.value
   cover.value = override?.cover ?? ''
-  lyrics.value = override?.lyrics ?? ''
+  lyrics.value = override?.lyrics ?? defaultLyrics.value
 }
 
 watch(() => props.song, loadFromSong, { immediate: true })
@@ -47,14 +72,28 @@ function clearCover() {
   cover.value = ''
 }
 
+function changed(value: string, defaultValue: string): string | undefined {
+  const trimmed = value.trim()
+  return trimmed && trimmed !== defaultValue.trim() ? trimmed : undefined
+}
+
+function restoreDefaults() {
+  title.value = defaultTitle.value
+  artist.value = defaultArtist.value
+  album.value = defaultAlbum.value
+  cover.value = ''
+  lyrics.value = defaultLyrics.value
+}
+
 function save() {
   setLocalMetadata(props.song.path, {
-    title: title.value.trim() || undefined,
-    artist: artist.value.trim() || undefined,
-    album: album.value.trim() || undefined,
+    title: changed(title.value, defaultTitle.value),
+    artist: changed(artist.value, defaultArtist.value),
+    album: changed(album.value, defaultAlbum.value),
     cover: cover.value.trim() || undefined,
-    lyrics: lyrics.value || undefined,
+    lyrics: changed(lyrics.value, defaultLyrics.value),
   })
+  emit('save')
   emit('close')
 }
 
@@ -72,7 +111,10 @@ nextTick(() => {
   <div class="editor-overlay" @click="handleBackdropClick">
     <div class="editor-modal" @click.stop>
       <div class="editor-header">
-        <h2>编辑歌曲信息</h2>
+        <div>
+          <h2>编辑歌曲信息</h2>
+          <p class="header-hint">修改仅保存在本地，不会覆盖原歌曲文件元数据。</p>
+        </div>
         <button class="close-btn" @click="emit('close')">✕</button>
       </div>
 
@@ -108,12 +150,12 @@ nextTick(() => {
 
         <label class="field">
           <span class="label">歌词</span>
-          <textarea v-model="lyrics" rows="8" placeholder="粘贴歌词文本（支持 LRC / YRC / LRC A2）"></textarea>
+          <textarea v-model="lyrics" rows="8" :disabled="isLoadingDefaults" placeholder="粘贴歌词文本（支持 LRC / YRC / LRC A2）"></textarea>
         </label>
       </div>
 
       <div class="editor-footer">
-        <span class="hint">修改仅保存在本地，不会写入原文件。</span>
+        <button class="btn secondary" @click="restoreDefaults">恢复默认</button>
         <div class="actions">
           <button class="btn secondary" @click="emit('close')">取消</button>
           <button class="btn primary" @click="save">保存</button>
@@ -148,7 +190,7 @@ nextTick(() => {
 
 .editor-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--fluent-border);
@@ -158,6 +200,12 @@ nextTick(() => {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+}
+
+.header-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--fluent-text-secondary);
 }
 
 .close-btn {

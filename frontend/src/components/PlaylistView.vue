@@ -21,7 +21,6 @@ const emit = defineEmits<{
   (e: 'add-to-playlist', playlistId: string, songs: Song[]): void
   (e: 'replace-to-playlist', playlistId: string, songs: Song[]): void
   (e: 'update-sort', payload: { playlistId: string; mode: SortMode; order: SortOrder }): void
-  (e: 'edit', song: Song): void
 }>()
 
 const {
@@ -98,10 +97,6 @@ function handleAddSingleToPlaylist(playlistId: string, song: Song) {
   emit('add-to-playlist', playlistId, [song])
 }
 
-function handleEdit(song: Song) {
-  emit('edit', song)
-}
-
 function handleReorder(songs: Song[]) {
   updateSongs(songs)
 }
@@ -147,7 +142,6 @@ function handleReorder(songs: Song[]) {
       @toggle="toggleSelection"
       @remove="removeSong"
       @reorder="handleReorder"
-      @edit="handleEdit"
       @add-to-playlist="handleAddSingleToPlaylist"
     />
 

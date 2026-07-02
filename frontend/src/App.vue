@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Events } from '@wailsio/runtime'
+import { LoadConfig } from '../bindings/sugarplayer/app'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import Settings from './components/Settings.vue'
@@ -14,19 +15,16 @@ import { useLyrics } from './composables/useLyrics'
 import { useWindowEffect } from './composables/useWindowEffect'
 import { useSession } from './composables/useSession'
 import PlayQueue from './components/player/PlayQueue.vue'
-import SongEditor from './components/SongEditor.vue'
 import type { PlayMode } from './components/player/PlayerControls.vue'
 import type { Song } from './types'
 import type { SortMode, SortOrder } from './composables/usePlaylistView'
-import { localMetadata } from './composables/useLocalMetadata'
+import { localMetadata, type LocalSongMetadata } from './composables/useLocalMetadata'
 
 const view = ref<'main' | 'settings'>('main')
 const isLoading = ref(true)
 const audioRef = ref<HTMLAudioElement | null>(null)
 const showPlayerDetail = ref(false)
 const showQueue = ref(false)
-const showSongEditor = ref(false)
-const editingSong = ref<Song | null>(null)
 const playMode = ref<PlayMode>('sequential')
 const settings = ref<AppSettings>({
   theme: 'system',
@@ -192,17 +190,8 @@ function toggleQueue() {
   showQueue.value = !showQueue.value
 }
 
-function handleEditSong(song: Song) {
-  editingSong.value = song
-  showSongEditor.value = true
-}
-
-function closeSongEditor() {
-  showSongEditor.value = false
-  editingSong.value = null
-}
-
 let offFolderChanged: (() => void) | null = null
+let offMetadataChanged: (() => void) | null = null
 
 onMounted(async () => {
   await load()
@@ -215,11 +204,25 @@ onMounted(async () => {
   offFolderChanged = Events.On('folder:changed', (event: any) => {
     refreshFolder(event.data)
   })
+  offMetadataChanged = Events.On('localmetadata:changed', async () => {
+    try {
+      const config = await LoadConfig()
+      if (config.settings?.localMetadata) {
+        const loaded = config.settings.localMetadata as Record<string, LocalSongMetadata>
+        settings.value = { ...settings.value, localMetadata: { ...loaded } }
+        localMetadata.value = { ...loaded }
+      }
+    } catch {
+      // ignore
+    }
+  })
 })
 
 onUnmounted(() => {
   offFolderChanged?.()
+  offMetadataChanged?.()
   Events.Off('folder:changed')
+  Events.Off('localmetadata:changed')
 })
 </script>
 
@@ -260,7 +263,6 @@ onUnmounted(() => {
           @add-to-playlist="addSongs"
           @replace-to-playlist="replaceSongs"
           @update-sort="handleUpdateSort"
-          @edit="handleEditSong"
         />
         <Settings
           v-if="view === 'settings'"
@@ -310,11 +312,6 @@ onUnmounted(() => {
       :current-song="audio.currentSong.value"
       @close="showQueue = false"
       @play="playCurrentSong"
-    />
-    <SongEditor
-      v-if="showSongEditor && editingSong"
-      :song="editingSong"
-      @close="closeSongEditor"
     />
     <audio ref="audioRef" style="display: none;"></audio>
   </div>

@@ -23,6 +23,7 @@ export interface ConfigLocalMetadata {
   album?: string;
   cover?: string;
   lyrics?: string;
+  lyricsFormat?: string;
 }
 
 export interface ConfigSettings {

@@ -19,6 +19,7 @@
  * @property {string} album
  * @property {string} cover
  * @property {string} lyrics
+ * @property {string} lyricsFormat
  */
 
 /**

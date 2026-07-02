@@ -1,6 +1,6 @@
 import { ref, watch, type Ref } from 'vue'
 import type { LyricLine } from '@applemusic-like-lyrics/core'
-import { parseLrc, parseLrcA2, parseYrc } from '@applemusic-like-lyrics/lyric'
+import { parseLrc, parseLrcA2, parseYrc, parseQrc, parseEslrc, parseTTML } from '@applemusic-like-lyrics/lyric'
 import { ReadLyrics } from '../../bindings/sugarplayer/app'
 import {
   convertLrcFormat,
@@ -20,9 +20,58 @@ function normalizeLrcA2(lrc: string): string {
     .replace(/<00:00\.000>(?=\s*<\d{2}:\d{2}(?:\.\d+)?>)/g, '')
 }
 
-function parseLyric(lrc: string): LyricLine[] {
+function isTtmlFormat(lrc: string): boolean {
+  return /<tt\s+xmlns=/i.test(lrc) || /<tt\s+>/i.test(lrc)
+}
+
+function isQrcFormat(lrc: string): boolean {
+  return /^\[ti:.*\]\[ar:.*\]\[al:.*\]/i.test(lrc) && /<\d+,\d+,\d+>/.test(lrc)
+}
+
+function isEslrcFormat(lrc: string): boolean {
+  return /^\[\d+,\d+\]/m.test(lrc) && /^\d+/.test(lrc.trimStart())
+}
+
+function parseLyric(lrc: string, format?: string): LyricLine[] {
   let parsed: LyricLine[] = []
-  if (isYrcFormat(lrc)) {
+
+  // 如果指定了格式，按指定格式解析
+  if (format && format !== 'auto') {
+    switch (format) {
+      case 'ttml':
+        const ttmlResult = parseTTML(lrc)
+        parsed = ttmlResult.lines
+        break
+      case 'qrc':
+        parsed = parseQrc(lrc) as LyricLine[]
+        break
+      case 'eslrc':
+        parsed = parseEslrc(lrc) as LyricLine[]
+        break
+      case 'yrc':
+        parsed = parseYrc(lrc) as LyricLine[]
+        break
+      case 'lrc-a2':
+        parsed = parseLrcA2(normalizeLrcA2(lrc)) as LyricLine[]
+        break
+      case 'lrc':
+        parsed = parseLrc(lrc) as LyricLine[]
+        break
+      default:
+        parsed = parseLrc(lrc) as LyricLine[]
+    }
+    return sanitizeLyricLines(parsed)
+  }
+
+  // 自动检测格式
+  if (isTtmlFormat(lrc)) {
+    const ttmlResult = parseTTML(lrc)
+    parsed = ttmlResult.lines
+  } else if (isQrcFormat(lrc)) {
+    parsed = parseQrc(lrc) as LyricLine[]
+  } else if (isEslrcFormat(lrc)) {
+    parsed = parseEslrc(lrc) as LyricLine[]
+  } else if (isYrcFormat(lrc)) {
     parsed = parseYrc(lrc) as LyricLine[]
   } else if (isEnhancedLrc(lrc)) {
     parsed = parseLrcA2(convertLrcFormat(lrc)) as LyricLine[]
@@ -31,6 +80,7 @@ function parseLyric(lrc: string): LyricLine[] {
   } else {
     parsed = parseLrc(lrc) as LyricLine[]
   }
+
   return sanitizeLyricLines(parsed)
 }
 
@@ -45,14 +95,16 @@ export function useLyrics(currentSong: Ref<{ path: string } | null>) {
       return
     }
 
-    const override = localMetadata.value[path]?.lyrics
+    const meta = localMetadata.value[path]
+    const override = meta?.lyrics
+    const format = meta?.lyricsFormat
     const lrc = (override && override.trim() !== '') ? override : await ReadLyrics(path).catch(() => '')
     if (!lrc) {
       lyrics.value = []
       hasLyrics.value = false
       return
     }
-    const parsed = parseLyric(lrc)
+    const parsed = parseLyric(lrc, format)
     lyrics.value = parsed
     hasLyrics.value = parsed.length > 0
   }
@@ -62,6 +114,10 @@ export function useLyrics(currentSong: Ref<{ path: string } | null>) {
   }, { immediate: true })
 
   watch(() => localMetadata.value[currentSong.value?.path ?? '']?.lyrics, () => {
+    loadLyrics(currentSong.value?.path || null)
+  })
+
+  watch(() => localMetadata.value[currentSong.value?.path ?? '']?.lyricsFormat, () => {
     loadLyrics(currentSong.value?.path || null)
   })
 

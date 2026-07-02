@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Playlist, Song } from '../types'
 import type { SortMode } from '../composables/usePlaylistView'
-import { OpenInExplorer } from '../../bindings/sugarplayer/app'
+import { OpenInExplorer, OpenSongEditor } from '../../bindings/sugarplayer/app'
 import {
   displayTitle,
   displayArtist,
@@ -26,7 +26,6 @@ const emit = defineEmits<{
   toggle: [id: string]
   remove: [id: string]
   reorder: [songs: Song[]]
-  edit: [song: Song]
   addToPlaylist: [playlistId: string, song: Song]
 }>()
 
@@ -118,6 +117,11 @@ function closeMenu() {
   contextSong.value = null
 }
 
+function openEditor() {
+  if (contextSong.value) OpenSongEditor(contextSong.value.path)
+  closeMenu()
+}
+
 function openExplorer() {
   if (contextSong.value) OpenInExplorer(contextSong.value.path)
   closeMenu()
@@ -194,7 +198,7 @@ const otherPlaylists = computed(() => props.playlists.filter(p => p.id !== props
         <button
           class="action-icon"
           title="编辑"
-          @click.stop="emit('edit', song)"
+          @click.stop="OpenSongEditor(song.path)"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -228,7 +232,7 @@ const otherPlaylists = computed(() => props.playlists.filter(p => p.id !== props
       :style="{ left: menuX + 'px', top: menuY + 'px' }"
       @click.stop
     >
-      <div class="menu-item" @click="emit('edit', contextSong!); closeMenu()">编辑</div>
+      <div class="menu-item" @click="openEditor">编辑</div>
       <div class="menu-item" @click="openExplorer">在文件资源管理器打开</div>
       <div class="menu-item" @click="removeFromPlaylist">从歌单移除</div>
       <div

@@ -24,6 +24,14 @@ export function AudioServerURL() {
 }
 
 /**
+ * EmitMetadataChanged emits an application-wide event to notify all windows that local metadata has changed.
+ * @returns {$CancellablePromise<void>}
+ */
+export function EmitMetadataChanged() {
+    return $Call.ByID(501538565);
+}
+
+/**
  * Greet returns a greeting for the given name
  * @param {string} name
  * @returns {$CancellablePromise<string>}
@@ -71,6 +79,15 @@ export function OpenMusicFiles() {
  */
 export function OpenMusicFolder() {
     return $Call.ByID(3249109596);
+}
+
+/**
+ * OpenSongEditor opens a dedicated editor window for the given song path.
+ * @param {string} path
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenSongEditor(path) {
+    return $Call.ByID(1743082593, path);
 }
 
 /**

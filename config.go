@@ -41,11 +41,12 @@ type ConfigPlaylistSort struct {
 
 // ConfigLocalMetadata stores user-edited metadata overrides for a song.
 type ConfigLocalMetadata struct {
-	Title  string `json:"title"`
-	Artist string `json:"artist"`
-	Album  string `json:"album"`
-	Cover  string `json:"cover"`
-	Lyrics string `json:"lyrics"`
+	Title        string `json:"title"`
+	Artist       string `json:"artist"`
+	Album        string `json:"album"`
+	Cover        string `json:"cover"`
+	Lyrics       string `json:"lyrics"`
+	LyricsFormat string `json:"lyricsFormat"`
 }
 
 // ConfigSettings represents app settings in persisted config.

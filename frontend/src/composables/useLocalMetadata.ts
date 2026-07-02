@@ -7,6 +7,7 @@ export interface LocalSongMetadata {
   album?: string
   cover?: string
   lyrics?: string
+  lyricsFormat?: 'auto' | 'lrc' | 'lrc-a2' | 'yrc' | 'qrc' | 'eslrc' | 'ttml'
 }
 
 export const localMetadata = ref<Record<string, LocalSongMetadata>>({})

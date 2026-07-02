@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { Song } from '../../types'
+import { displayTitle, displayArtist } from '../../composables/usePlaylistDisplay'
 
 const props = defineProps<{
   isVisible: boolean
@@ -59,9 +60,9 @@ const topChromeLeave = () => emit('topChromeLeave')
       </div>
 
       <div class="chrome-center">
-        {{ currentSong?.metadata?.title || currentSong?.title }}
-        <span v-if="currentSong?.metadata?.artist" class="mx-1 opacity-60">-</span>
-        <span class="opacity-60">{{ currentSong?.metadata?.artist }}</span>
+        {{ currentSong ? displayTitle(currentSong) : '' }}
+        <span v-if="currentSong && displayArtist(currentSong) !== '未知艺术家'" class="mx-1 opacity-60">-</span>
+        <span class="opacity-60">{{ currentSong ? displayArtist(currentSong) : '' }}</span>
       </div>
 
       <div class="chrome-right">

@@ -13,11 +13,13 @@ const appDts = `import { CancellablePromise } from "@wailsio/runtime";
 import * as models from "./models.js";
 
 export function AudioServerURL(): CancellablePromise<string>;
+export function EmitMetadataChanged(): CancellablePromise<void>;
 export function Greet(name: string): CancellablePromise<string>;
 export function LoadConfig(): CancellablePromise<models.AppConfig>;
 export function OpenImageFile(): CancellablePromise<string>;
 export function OpenInExplorer(path: string): CancellablePromise<void>;
 export function OpenMusicFiles(): CancellablePromise<string[]>;
+export function OpenSongEditor(path: string): CancellablePromise<void>;
 export function OpenMusicFolder(): CancellablePromise<string>;
 export function ReadAudioFile(path: string): CancellablePromise<string>;
 export function ReadCoverArt(path: string): CancellablePromise<string>;
@@ -56,6 +58,7 @@ export interface ConfigLocalMetadata {
   album?: string;
   cover?: string;
   lyrics?: string;
+  lyricsFormat?: string;
 }
 
 export interface ConfigSettings {
