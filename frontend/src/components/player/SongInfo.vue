@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { footerCoverVisible } from '../../composables/useSharedTransition'
 import { type Song } from '../../types'
 import { displayTitle, displayArtist } from '../../composables/usePlaylistDisplay'
 
@@ -30,16 +29,13 @@ function handleClick() {
 
 <template>
   <div class="song-info-wrap">
+    <!-- 空锚点：封面图由 PlayerDetailLeft 折叠态渲染并定位到此区域
+         纯 CSS 平移动画无需 first rect，此处仅保留点击触发与占位 -->
     <div
-      class="cover"
+      class="cover-placeholder"
       data-footer-cover
-      :class="{ hidden: !footerCoverVisible }"
       @click="emit('click')"
-    >
-      <img v-if="coverUrl" :src="coverUrl" class="cover-img" alt="cover" />
-      <span v-else-if="!song">♪</span>
-      <span v-else>♫</span>
-    </div>
+    ></div>
     <div
       class="song-info"
       :class="{ 'detail-mode': showDetail }"
@@ -59,37 +55,14 @@ function handleClick() {
   min-width: 0;
 }
 
-.cover {
+/* 占位锚点：与封面折叠态尺寸一致（44x44），透明，仅接收点击 */
+.cover-placeholder {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--fluent-bg-hover);
-  font-size: 18px;
-  color: var(--fluent-text-secondary);
   flex-shrink: 0;
-  overflow: hidden;
   cursor: pointer;
-  transition: transform 200ms ease, box-shadow 200ms ease;
-}
-
-.cover:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.cover.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transition: none;
-}
-
-.cover-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  background: transparent;
 }
 
 .song-info {

@@ -51,6 +51,12 @@ const fullScreenBackgrounds = [
   { value: 'dynamic', label: '动态' },
 ] as const
 
+const coverTransitions = [
+  { value: 'fade', label: '淡入淡出' },
+  { value: 'slide-left', label: '左边滑入滑出' },
+  { value: 'slide-both', label: '左右滑入滑出' },
+] as const
+
 function handleQualityChange(event: Event) {
   const value = (event.target as HTMLSelectElement).value as AppSettings['quality']
   update({ quality: value })
@@ -109,6 +115,13 @@ function handleQualityChange(event: Event) {
             :options="fullScreenBackgrounds"
             :model-value="settings.fullScreenBackground"
             @update:model-value="value => update({ fullScreenBackground: value as AppSettings['fullScreenBackground'] })"
+          />
+        </SettingRow>
+        <SettingRow label="封面切换动画" description="切换歌曲时封面的过渡效果">
+          <SegmentedControl
+            :options="coverTransitions"
+            :model-value="settings.coverTransition"
+            @update:model-value="value => update({ coverTransition: value as AppSettings['coverTransition'] })"
           />
         </SettingRow>
         <SettingRow label="沉浸式播放栏" description="鼠标移开时淡化播放栏中间与右侧，移入时恢复显示">

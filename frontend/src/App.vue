@@ -40,6 +40,7 @@ const settings = ref<AppSettings>({
   songColorOpacity: 45,
   songColorBlur: 30,
   fullScreenBackground: 'static',
+  coverTransition: 'fade',
   immersivePlayerBar: false,
   selectedPlaylistId: '',
   playlistSorts: {},
@@ -250,26 +251,30 @@ onUnmounted(() => {
         @drop-songs="handleDropSongs"
       />
       <main class="main">
-        <PlaylistView
-          v-if="view === 'main' && currentPlaylist"
-          :playlist="currentPlaylist"
-          :playlists="playlists"
-          :current-song="audio.currentSong.value"
-          :initial-sort="currentPlaylistSort"
-          @update:playlist="updatePlaylist"
-          @add-music-files="currentPlaylist && addMusicFiles(currentPlaylist.id)"
-          @add-music-folder="currentPlaylist && addMusicFolder(currentPlaylist.id)"
-          @play-song="playCurrentSong"
-          @add-to-playlist="addSongs"
-          @replace-to-playlist="replaceSongs"
-          @update-sort="handleUpdateSort"
-        />
-        <Settings
-          v-if="view === 'settings'"
-          :settings="settings"
-          @update:settings="updateSettings"
-          @close="view = 'main'"
-        />
+        <Transition name="view-flip">
+          <PlaylistView
+            v-if="view === 'main' && currentPlaylist"
+            :key="'playlist-' + currentPlaylist.id"
+            :playlist="currentPlaylist"
+            :playlists="playlists"
+            :current-song="audio.currentSong.value"
+            :initial-sort="currentPlaylistSort"
+            @update:playlist="updatePlaylist"
+            @add-music-files="currentPlaylist && addMusicFiles(currentPlaylist.id)"
+            @add-music-folder="currentPlaylist && addMusicFolder(currentPlaylist.id)"
+            @play-song="playCurrentSong"
+            @add-to-playlist="addSongs"
+            @replace-to-playlist="replaceSongs"
+            @update-sort="handleUpdateSort"
+          />
+          <Settings
+            v-else-if="view === 'settings'"
+            :key="'settings'"
+            :settings="settings"
+            @update:settings="updateSettings"
+            @close="view = 'main'"
+          />
+        </Transition>
       </main>
     </div>
     <PlayerFooter
@@ -303,6 +308,7 @@ onUnmounted(() => {
       :current-time="lyricTime"
       :background-mode="settings.fullScreenBackground"
       :immersive-player-bar="settings.immersivePlayerBar"
+      :cover-transition="settings.coverTransition"
       @close="togglePlayerDetail"
       @seek="audio.seek"
     />
@@ -346,6 +352,28 @@ onUnmounted(() => {
 
 .main {
   flex: 1;
+  position: relative;
   overflow: hidden;
+}
+
+/* FluentUI 风格界面切换：原界面原地淡化，新界面从偏下方弹出（不淡化） */
+.view-flip-enter-active {
+  position: absolute;
+  inset: 0;
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.view-flip-leave-active {
+  position: absolute;
+  inset: 0;
+  transition: opacity 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.view-flip-enter-from {
+  transform: translateY(56px);
+}
+
+.view-flip-leave-to {
+  opacity: 0;
 }
 </style>

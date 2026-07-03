@@ -1,12 +1,10 @@
 <script lang="ts" setup>
-import type { Song } from '../../types'
-import { displayTitle, displayArtist } from '../../composables/usePlaylistDisplay'
-
 const props = defineProps<{
   isVisible: boolean
   isTopChromeVisible: boolean
   isMaximised: boolean
-  currentSong: Song | null
+  isFullscreen: boolean
+  isAlwaysOnTop: boolean
   staggerStyle: (phase: number, translateDir?: 'Y' | 'X', distance?: number) => Record<string, string | number>
 }>()
 
@@ -14,6 +12,8 @@ const emit = defineEmits<{
   close: []
   minimize: []
   toggleMaximize: []
+  toggleFullscreen: []
+  toggleAlwaysOnTop: []
   closeApp: []
   showTopChrome: []
   topChromeLeave: []
@@ -22,6 +22,8 @@ const emit = defineEmits<{
 const handleClose = () => emit('close')
 const minimize = () => emit('minimize')
 const toggleMaximize = () => emit('toggleMaximize')
+const toggleFullscreen = () => emit('toggleFullscreen')
+const toggleAlwaysOnTop = () => emit('toggleAlwaysOnTop')
 const closeApp = () => emit('closeApp')
 const showTopChrome = () => emit('showTopChrome')
 const topChromeLeave = () => emit('topChromeLeave')
@@ -48,40 +50,50 @@ const topChromeLeave = () => emit('topChromeLeave')
         'pe-auto': isVisible,
         'pe-none': !isVisible,
       }"
+      @dblclick="toggleMaximize"
     >
+      <!-- 拖动区域：覆盖整个顶部 -->
       <div class="drag-region" style="--wails-draggable: drag"></div>
 
-      <div class="chrome-left">
-        <button title="收起详情页" class="chrome-btn" @click="handleClose">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+      <div class="chrome-left" @dblclick.stop>
+        <button title="收起详情页" class="icon-btn collapse-btn" @click="handleClose">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+        <button :title="props.isAlwaysOnTop ? '取消置顶' : '置顶'" class="icon-btn pin-btn" :class="{ active: props.isAlwaysOnTop }" @click="toggleAlwaysOnTop">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 17v5" />
+            <path d="M9 10.76V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6.76l2 4.24H7l2-4.24Z" />
           </svg>
         </button>
       </div>
 
-      <div class="chrome-center">
-        {{ currentSong ? displayTitle(currentSong) : '' }}
-        <span v-if="currentSong && displayArtist(currentSong) !== '未知艺术家'" class="mx-1 opacity-60">-</span>
-        <span class="opacity-60">{{ currentSong ? displayArtist(currentSong) : '' }}</span>
-      </div>
-
-      <div class="chrome-right">
-        <button class="chrome-btn small" title="最小化" @click="minimize">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="chrome-right" @dblclick.stop>
+        <button class="win-btn" :title="props.isFullscreen ? '退出全屏 (F11)' : '全屏 (F11)'" @click="toggleFullscreen">
+          <svg v-if="props.isFullscreen" xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 8V5a2 2 0 0 1 2-2h3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3" />
+          </svg>
+        </button>
+        <button class="win-btn" title="最小化" @click="minimize">
+          <svg xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 12h14" />
           </svg>
         </button>
-        <button class="chrome-btn small" :title="props.isMaximised ? '还原' : '最大化'" @click="toggleMaximize">
-          <svg v-if="props.isMaximised" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="win-btn" :title="props.isMaximised ? '还原' : '最大化'" @click="toggleMaximize">
+          <svg v-if="props.isMaximised" xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="6" y="6" width="14" height="14" rx="2" ry="2" />
             <rect x="3" y="3" width="14" height="14" rx="2" ry="2" />
           </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="win-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
           </svg>
         </button>
-        <button class="chrome-btn close-btn" title="关闭" @click="closeApp">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="win-btn win-close" title="关闭" @click="closeApp">
+          <svg xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
@@ -114,65 +126,115 @@ const topChromeLeave = () => emit('topChromeLeave')
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 0 0 24px;
   transition: all 500ms ease-out;
 }
 
+/* 拖动区域：覆盖整个 chrome-inner */
 .drag-region {
   position: absolute;
   inset: 0;
+  z-index: 0;
 }
 
 .chrome-left {
   position: relative;
   z-index: 10;
   display: flex;
-  width: 25%;
   align-items: center;
+  gap: 10px;
 }
 
-.chrome-center {
-  pointer-events: none;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 16px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+/* 圆形半透明图标按钮（收起、置顶） */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 160ms ease, transform 160ms ease, color 160ms ease;
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.05);
+}
+
+.icon-btn:active {
+  transform: scale(0.96);
+}
+
+/* 置顶激活态 */
+.pin-btn.active {
+  background: rgba(255, 255, 255, 0.28);
+  color: white;
+}
+
+.pin-btn.active:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .chrome-right {
   position: relative;
   z-index: 10;
   display: flex;
-  width: 25%;
-  align-items: center;
+  height: 100%;
+  align-items: stretch;
   justify-content: flex-end;
-  gap: 8px;
 }
 
-.chrome-btn {
-  padding: 8px;
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.5);
-  transition: all 200ms;
+/* Windows 原生风格窗口控制按钮 */
+.win-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
   background: transparent;
   border: none;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
 }
 
-.chrome-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
   color: white;
 }
 
-.chrome-btn.close-btn:hover {
-  background: #ef4444;
+.win-btn:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.win-close:hover {
+  background: #e81123;
   color: white;
+}
+
+.win-close:active {
+  background: #f1707a;
+  color: white;
+}
+
+.win-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.win-icon-sm {
+  width: 12px;
+  height: 12px;
 }
 
 .pe-auto {
@@ -197,21 +259,5 @@ const topChromeLeave = () => emit('topChromeLeave')
 
 .opacity-0 {
   opacity: 0;
-}
-
-.opacity-60 {
-  opacity: 0.6;
-}
-
-.h-6 { height: 24px; }
-.w-6 { width: 24px; }
-.h-4 { height: 16px; }
-.w-4 { width: 16px; }
-.h-3 { height: 12px; }
-.w-3 { width: 12px; }
-
-.mx-1 {
-  margin-left: 4px;
-  margin-right: 4px;
 }
 </style>

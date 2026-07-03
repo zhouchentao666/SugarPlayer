@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { ref, watch, computed } from 'vue'
-import { coverStyle } from '../../composables/useSharedTransition'
 import { useCoverTilt } from '../../composables/useCoverTilt'
 import PlayerDetailCoverImage from './PlayerDetailCoverImage.vue'
 
@@ -9,7 +8,7 @@ const props = defineProps<{
   isPlaying: boolean
   isExpanded: boolean
   showLyrics: boolean
-  isAnimating: boolean
+  coverTransition: 'fade' | 'slide-left' | 'slide-both'
 }>()
 
 const emit = defineEmits<{
@@ -48,45 +47,46 @@ defineExpose({ detailCoverRef })
 </script>
 
 <template>
-  <div class="pointer-events-none">
-    <div
-      ref="detailCoverRef"
-      class="cover-container"
-      :class="[
-        props.isExpanded ? 'expanded' : 'collapsed',
-        props.showLyrics ? 'with-lyrics' : 'center',
-        { animating: props.isAnimating },
-      ]"
-      :style="coverStyle"
-      @click="toggleLyrics"
-      @mousemove="onMouseMove"
-      @mouseenter="handleMouseEnter"
-      @mouseleave="handleMouseLeave"
-    >
-      <div class="cover-inner" :style="{ transform: coverTransform }">
-        <PlayerDetailCoverImage
-          :cover-url="localCoverUrl"
-          :song-path="currentSongPath"
-          :is-expanded="props.isExpanded"
-        />
+  <Teleport to="body">
+    <div class="pointer-events-none">
+      <div
+        ref="detailCoverRef"
+        class="cover-container"
+        :class="[
+          props.isExpanded ? 'expanded' : 'collapsed',
+          props.showLyrics ? 'with-lyrics' : 'center',
+        ]"
+        @click="toggleLyrics"
+        @mousemove="onMouseMove"
+        @mouseenter="handleMouseEnter"
+        @mouseleave="handleMouseLeave"
+      >
+        <div class="cover-inner" :style="{ transform: coverTransform }">
+          <PlayerDetailCoverImage
+            :cover-url="localCoverUrl"
+            :song-path="currentSongPath"
+            :is-expanded="props.isExpanded"
+            :transition="props.coverTransition"
+          />
+
+          <div
+            v-if="props.isExpanded"
+            class="shine-layer"
+            :style="{
+              background: `radial-gradient(circle at ${shineX}% ${shineY}%, rgba(255,255,255,0.35) 0%, transparent 50%)`,
+              opacity: isHovering ? 1 : 0,
+            }"
+          ></div>
+        </div>
 
         <div
           v-if="props.isExpanded"
-          class="shine-layer"
-          :style="{
-            background: `radial-gradient(circle at ${shineX}% ${shineY}%, rgba(255,255,255,0.35) 0%, transparent 50%)`,
-            opacity: isHovering ? 1 : 0,
-          }"
+          class="cover-shadow"
+          :style="{ transform: shadowTransform }"
         ></div>
       </div>
-
-      <div
-        v-if="props.isExpanded"
-        class="cover-shadow"
-        :style="{ transform: shadowTransform }"
-      ></div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -94,12 +94,23 @@ defineExpose({ detailCoverRef })
   pointer-events: none;
 }
 
+/* 封面容器：通过 Teleport 到 body，脱离 PlayerDetail stacking context
+   z-index 70 盖住 PlayerFooter(60)，折叠态可见
+   纯 CSS transition 驱动，天然支持多次打断（CSS 从当前插值位置继续） */
 .cover-container {
-  position: absolute;
+  position: fixed;
   aspect-ratio: 1;
-  will-change: transform;
+  will-change: transform, top, left, width;
   pointer-events: auto;
   overflow: visible;
+  z-index: 70;
+  /* 参考 LyciaMusic：duration-700 + cubic-bezier(0.22,1,0.36,1) */
+  transition:
+    top 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 300ms ease,
+    opacity 300ms ease;
 }
 
 .cover-container.expanded {
@@ -107,11 +118,7 @@ defineExpose({ detailCoverRef })
   top: calc(45% - var(--cover-size) / 2);
   width: var(--cover-size);
   border-radius: 16px;
-  transition:
-    left 600ms cubic-bezier(0.22, 1, 0.36, 1),
-    top 500ms cubic-bezier(0.22, 1, 0.36, 1),
-    width 500ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 300ms ease;
+  opacity: 1;
 }
 
 .cover-container.expanded.center {
@@ -122,17 +129,15 @@ defineExpose({ detailCoverRef })
   left: calc(28% - var(--cover-size) / 2);
 }
 
-.cover-container.expanded.animating {
-  transition: border-radius 300ms ease;
-}
-
+/* 折叠态：定位到底栏封面位置（底栏 72px，封面 44px，垂直居中）
+   top = 100vh - 72px + (72-44)/2 = 100vh - 58px */
 .cover-container.collapsed {
-  top: calc(100vh - 64px);
+  top: calc(100vh - 58px);
   left: 16px;
-  width: 48px;
+  width: 44px;
   border-radius: 8px;
   pointer-events: none;
-  opacity: 0;
+  opacity: 1;
 }
 
 .cover-inner {

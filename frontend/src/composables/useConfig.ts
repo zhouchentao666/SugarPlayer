@@ -6,6 +6,7 @@ import type { LocalSongMetadata } from './useLocalMetadata'
 
 export type WindowEffect = 'none' | 'acrylic' | 'custom-image' | 'song-color'
 export type FullScreenBackground = 'static' | 'dynamic'
+export type CoverTransition = 'fade' | 'slide-left' | 'slide-both'
 
 export interface PlaylistSort {
   mode: SortMode
@@ -26,6 +27,7 @@ export interface AppSettings {
   songColorOpacity: number
   songColorBlur: number
   fullScreenBackground: FullScreenBackground
+  coverTransition: CoverTransition
   immersivePlayerBar: boolean
   selectedPlaylistId: string
   playlistSorts: Record<string, PlaylistSort>
@@ -88,6 +90,7 @@ export function useConfig(
           songColorOpacity: hasEffect ? (config.settings.songColorOpacity ?? 45) : 45,
           songColorBlur: hasEffect ? (config.settings.songColorBlur ?? 30) : 30,
           fullScreenBackground: (config.settings.fullScreenBackground as FullScreenBackground) || 'static',
+          coverTransition: ((config.settings as unknown as Record<string, unknown>).coverTransition as CoverTransition) || 'fade',
           immersivePlayerBar: config.settings.immersivePlayerBar ?? false,
           selectedPlaylistId: config.settings.selectedPlaylistId ?? '',
           playlistSorts: (config.settings.playlistSorts as Record<string, PlaylistSort>) ?? {},

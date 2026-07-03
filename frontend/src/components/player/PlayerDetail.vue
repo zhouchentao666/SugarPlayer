@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watch, nextTick, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import PlayerDetailBackground from './PlayerDetailBackground.vue'
 import PlayerDetailLeft from './PlayerDetailLeft.vue'
 import PlayerDetailTopChrome from './PlayerDetailTopChrome.vue'
@@ -18,6 +18,7 @@ const props = defineProps<{
   currentTime: number
   backgroundMode?: 'static' | 'dynamic'
   immersivePlayerBar?: boolean
+  coverTransition?: 'fade' | 'slide-left' | 'slide-both'
 }>()
 
 const emit = defineEmits<{
@@ -26,32 +27,25 @@ const emit = defineEmits<{
 }>()
 
 const {
-  bgOpacity,
   isTopChromeVisible,
   isMaximised,
+  isFullscreen,
+  isAlwaysOnTop,
   showTopChrome,
   handleTopChromeLeave,
-  runEnterTransition,
-  runLeaveTransition,
+  runStaggerEnter,
+  runStaggerLeave,
   updateMaximizeState,
   staggerStyle,
   minimize,
   toggleMaximize,
+  toggleFullscreen,
+  toggleAlwaysOnTop,
   closeApp,
 } = usePlayerDetail(computed(() => props.immersivePlayerBar ?? false))
 
-const detailLeftRef = ref<InstanceType<typeof PlayerDetailLeft> | null>(null)
-const isVisible = ref(false)
-const isExpanded = ref(false)
-const showLyrics = ref(true)
-const positionLyrics = ref(true)
-const isAnimating = ref(false)
-let detailAnimationId = 0
-
-const coverElement = computed(() =>
-  detailLeftRef.value?.$el?.querySelector('.cover-container') as HTMLElement | null
-    || detailLeftRef.value?.$el,
-)
+const showLyrics = ref(false)
+const positionLyrics = ref(false)
 
 const handleClose = () => emit('close')
 
@@ -72,33 +66,20 @@ watch(() => props.hasLyrics, (hasLyrics) => {
   }
 })
 
-watch(() => props.show, async (visible) => {
-  const animId = ++detailAnimationId
-
+// 纯 CSS 驱动：show 切换直接改 isExpanded，CSS transition 自动从当前插值位置继续
+// 天然支持多次打断，无需 JS FLIP 逻辑
+watch(() => props.show, (visible) => {
   if (visible) {
-    isAnimating.value = true
     showLyrics.value = props.hasLyrics
     positionLyrics.value = props.hasLyrics
     isTopChromeVisible.value = true
     showTopChrome()
-    isVisible.value = true
-    isExpanded.value = true
-
-    await nextTick()
-    await new Promise(resolve => requestAnimationFrame(resolve))
-    await runEnterTransition(coverElement.value)
-    if (animId !== detailAnimationId) return
-    isAnimating.value = false
+    runStaggerEnter()
   } else {
-    isAnimating.value = true
     showLyrics.value = false
-    isTopChromeVisible.value = false
-    await runLeaveTransition(coverElement.value)
-    if (animId !== detailAnimationId) return
-    isVisible.value = false
-    isExpanded.value = false
-    isAnimating.value = false
     positionLyrics.value = false
+    isTopChromeVisible.value = false
+    runStaggerLeave()
   }
 })
 </script>
@@ -106,16 +87,16 @@ watch(() => props.show, async (visible) => {
 <template>
   <div
     class="player-detail"
-    :class="{ visible: isVisible }"
+    :class="{ visible: props.show }"
   >
     <div class="player-inner">
       <div
         class="bg-wrapper"
-        :style="{ opacity: bgOpacity }"
+        :class="{ visible: props.show }"
       >
         <PlayerDetailBackground
           :cover-url="props.coverUrl"
-          :active="isVisible"
+          :active="props.show"
           :background-mode="props.backgroundMode ?? 'static'"
           :has-lyrics="props.hasLyrics"
         />
@@ -123,26 +104,28 @@ watch(() => props.show, async (visible) => {
       </div>
 
       <PlayerDetailTopChrome
-        :is-visible="isVisible"
+        :is-visible="props.show"
         :is-top-chrome-visible="isTopChromeVisible"
         :is-maximised="isMaximised"
-        :current-song="props.currentSong"
+        :is-fullscreen="isFullscreen"
+        :is-always-on-top="isAlwaysOnTop"
         :stagger-style="(phase, dir, dist) => staggerStyle(props.show, phase, dir, dist)"
         @close="handleClose"
         @minimize="minimize"
         @toggle-maximize="toggleMaximize"
+        @toggle-fullscreen="toggleFullscreen"
+        @toggle-always-on-top="toggleAlwaysOnTop"
         @close-app="closeApp"
         @show-top-chrome="showTopChrome"
         @top-chrome-leave="handleTopChromeLeave"
       />
 
       <PlayerDetailLeft
-        ref="detailLeftRef"
         :cover-url="props.coverUrl"
         :is-playing="props.isPlaying"
-        :is-expanded="isExpanded"
+        :is-expanded="props.show"
         :show-lyrics="positionLyrics"
-        :is-animating="isAnimating"
+        :cover-transition="props.coverTransition ?? 'fade'"
         @toggle-lyrics="toggleLyrics"
       />
 
@@ -158,6 +141,9 @@ watch(() => props.show, async (visible) => {
 </template>
 
 <style scoped>
+/* z-index 50 低于 PlayerFooter(60)，保证底部播放栏始终可见
+   折叠态不用 visibility:hidden，保证封面图始终可见（定位到底栏位置）
+   展开态 footer detail-mode 背景透明，PlayerDetail 背景在 footer 下方透出 */
 .player-detail {
   position: fixed;
   inset: 0;
@@ -169,17 +155,11 @@ watch(() => props.show, async (visible) => {
   font-family: sans-serif;
   user-select: none;
   color: white;
-  opacity: 0;
   pointer-events: none;
-  visibility: hidden;
-  transition: none;
 }
 
 .player-detail.visible {
-  opacity: 1;
   pointer-events: auto;
-  visibility: visible;
-  transition: none;
 }
 
 .player-inner {
@@ -193,7 +173,14 @@ watch(() => props.show, async (visible) => {
 .bg-wrapper {
   position: absolute;
   inset: 0;
-  transition: opacity 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 600ms cubic-bezier(0.22, 1, 0.36, 1), transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bg-wrapper.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .bg-fallback {

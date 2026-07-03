@@ -1,10 +1,13 @@
-import { computed, onBeforeUnmount, ref, unref, type MaybeRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, unref, type MaybeRef } from 'vue'
 import { Window, Application } from '@wailsio/runtime'
-import { useSharedTransition, bgOpacity, staggerPhase } from './useSharedTransition'
+import { staggerPhase } from './useSharedTransition'
+
+const STAGGER_DELAYS = [0.45, 0.6, 0.8] // phase 1/2/3 的延迟系数（相对 500ms）
 
 export function usePlayerDetail(autoHideTopChrome: MaybeRef<boolean> = false) {
-  const { captureFirst, playEnter, playLeave, cancel } = useSharedTransition()
   const isMaximised = ref(false)
+  const isFullscreen = ref(false)
+  const isAlwaysOnTop = ref(false)
 
   async function updateMaximizeState() {
     isMaximised.value = await Window.IsMaximised()
@@ -13,6 +16,27 @@ export function usePlayerDetail(autoHideTopChrome: MaybeRef<boolean> = false) {
   async function toggleMaximize() {
     Window.ToggleMaximise()
     await updateMaximizeState()
+  }
+
+  async function toggleFullscreen() {
+    if (isFullscreen.value) {
+      Window.UnFullscreen()
+    } else {
+      Window.Fullscreen()
+    }
+    isFullscreen.value = !isFullscreen.value
+  }
+
+  async function toggleAlwaysOnTop() {
+    isAlwaysOnTop.value = !isAlwaysOnTop.value
+    await Window.SetAlwaysOnTop(isAlwaysOnTop.value)
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'F11') {
+      e.preventDefault()
+      toggleFullscreen()
+    }
   }
 
   const TOP_CHROME_HIDE_DELAY = 2500
@@ -45,19 +69,28 @@ export function usePlayerDetail(autoHideTopChrome: MaybeRef<boolean> = false) {
     }
   }
 
-  const runEnterTransition = async (detailCover: HTMLElement | null | undefined) => {
-    const footerCover = document.querySelector('[data-footer-cover]') as HTMLElement | null
-    if (footerCover) captureFirst(footerCover)
-
-    if (detailCover) {
-      await playEnter(detailCover)
-    }
+  // 配角元素交错渐入/渐出
+  let staggerTimers: ReturnType<typeof setTimeout>[] = []
+  const clearStaggerTimers = () => {
+    staggerTimers.forEach(t => clearTimeout(t))
+    staggerTimers = []
   }
 
-  const runLeaveTransition = async (detailCover: HTMLElement | null | undefined) => {
-    if (detailCover) {
-      await playLeave(detailCover)
-    }
+  function runStaggerEnter() {
+    clearStaggerTimers()
+    staggerPhase.value = 0
+    STAGGER_DELAYS.forEach((delay, i) => {
+      staggerTimers.push(
+        setTimeout(() => {
+          staggerPhase.value = i + 1
+        }, 500 * delay),
+      )
+    })
+  }
+
+  function runStaggerLeave() {
+    clearStaggerTimers()
+    staggerPhase.value = 0
   }
 
   const staggerStyle = (show: boolean, phase: number, translateDir: 'Y' | 'X' = 'Y', distance = 20) => {
@@ -74,24 +107,32 @@ export function usePlayerDetail(autoHideTopChrome: MaybeRef<boolean> = false) {
   const minimize = () => Window.Minimise()
   const closeApp = () => Application.Quit()
 
+  onMounted(() => {
+    window.addEventListener('keydown', onKeydown)
+  })
+
   onBeforeUnmount(() => {
     clearTopChromeHideTimer()
+    clearStaggerTimers()
+    window.removeEventListener('keydown', onKeydown)
   })
 
   return {
-    bgOpacity: computed(() => bgOpacity.value),
     staggerPhase: computed(() => staggerPhase.value),
     isTopChromeVisible,
     isMaximised,
+    isFullscreen,
+    isAlwaysOnTop,
     showTopChrome,
     handleTopChromeLeave,
-    runEnterTransition,
-    runLeaveTransition,
-    cancel,
+    runStaggerEnter,
+    runStaggerLeave,
     updateMaximizeState,
     staggerStyle,
     minimize,
     toggleMaximize,
+    toggleFullscreen,
+    toggleAlwaysOnTop,
     closeApp,
   }
 }

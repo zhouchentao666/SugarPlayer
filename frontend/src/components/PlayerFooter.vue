@@ -56,12 +56,11 @@ function formatDuration(seconds: number): string {
     />
 
     <div class="footer-content">
-      <div class="section left">
+      <div class="section left" @click="emit('open-detail')">
         <SongInfo
           :song="currentSong"
           :cover-url="coverUrl"
           :show-detail="showDetail"
-          @click="emit('open-detail')"
         />
       </div>
 
@@ -127,6 +126,7 @@ function formatDuration(seconds: number): string {
 
 .section.left {
   flex: 1;
+  cursor: pointer;
 }
 
 .section.center {
