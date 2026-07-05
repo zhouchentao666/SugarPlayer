@@ -56,13 +56,13 @@ const topChromeLeave = () => emit('topChromeLeave')
       <div class="drag-region" style="--wails-draggable: drag"></div>
 
       <div class="chrome-left" @dblclick.stop>
-        <button title="收起详情页" class="icon-btn collapse-btn" @click="handleClose">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <button title="收起详情页" class="win-btn" @click="handleClose">
+          <svg xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 9l6 6 6-6" />
           </svg>
         </button>
-        <button :title="props.isAlwaysOnTop ? '取消置顶' : '置顶'" class="icon-btn pin-btn" :class="{ active: props.isAlwaysOnTop }" @click="toggleAlwaysOnTop">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <button :title="props.isAlwaysOnTop ? '取消置顶' : '置顶'" class="win-btn" :class="{ active: props.isAlwaysOnTop }" @click="toggleAlwaysOnTop">
+          <svg xmlns="http://www.w3.org/2000/svg" class="win-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 17v5" />
             <path d="M9 10.76V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6.76l2 4.24H7l2-4.24Z" />
           </svg>
@@ -141,48 +141,8 @@ const topChromeLeave = () => emit('topChromeLeave')
   position: relative;
   z-index: 10;
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* 圆形半透明图标按钮（收起、置顶） */
-.icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  transition: background 160ms ease, transform 160ms ease, color 160ms ease;
-}
-
-.icon-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-.icon-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-  transform: scale(1.05);
-}
-
-.icon-btn:active {
-  transform: scale(0.96);
-}
-
-/* 置顶激活态 */
-.pin-btn.active {
-  background: rgba(255, 255, 255, 0.28);
-  color: white;
-}
-
-.pin-btn.active:hover {
-  background: rgba(255, 255, 255, 0.35);
+  height: 100%;
+  align-items: stretch;
 }
 
 .chrome-right {
@@ -215,6 +175,15 @@ const topChromeLeave = () => emit('topChromeLeave')
 
 .win-btn:active {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.win-btn.active {
+  color: white;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.win-btn.active:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .win-close:hover {

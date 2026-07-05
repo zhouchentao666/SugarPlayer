@@ -74,3 +74,8 @@ func (a *App) OpenSongEditor(path string) error {
 func (a *App) EmitMetadataChanged() {
 	a.app.Event.Emit("localmetadata:changed", nil)
 }
+
+// OpenURL opens the given URL in the default system browser.
+func (a *App) OpenURL(u string) error {
+	return a.app.Browser.OpenURL(u)
+}

@@ -53,3 +53,8 @@ import * as $models from "./models.js";
  * SongMetadata holds audio metadata for a single file.
  * @typedef {$models.SongMetadata} SongMetadata
  */
+
+/**
+ * UpdateInfo holds the result of an update check.
+ * @typedef {$models.UpdateInfo} UpdateInfo
+ */

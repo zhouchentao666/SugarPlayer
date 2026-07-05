@@ -24,6 +24,15 @@ export function AudioServerURL() {
 }
 
 /**
+ * CheckUpdate checks GitHub for a newer release. It tries the API first, then
+ * the release page, then a mirror.
+ * @returns {$CancellablePromise<$models.UpdateInfo>}
+ */
+export function CheckUpdate() {
+    return $Call.ByID(586574094);
+}
+
+/**
  * EmitMetadataChanged emits an application-wide event to notify all windows that local metadata has changed.
  * @returns {$CancellablePromise<void>}
  */
@@ -88,6 +97,15 @@ export function OpenMusicFolder() {
  */
 export function OpenSongEditor(path) {
     return $Call.ByID(1743082593, path);
+}
+
+/**
+ * OpenURL opens the given URL in the default system browser.
+ * @param {string} u
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenURL(u) {
+    return $Call.ByID(3584934946, u);
 }
 
 /**

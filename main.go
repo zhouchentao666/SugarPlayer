@@ -40,5 +40,5 @@ func main() {
 
 // Version returns the current application version.
 func (a *App) Version() string {
-	return "0.0.5"
+	return "0.0.6"
 }

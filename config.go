@@ -65,6 +65,8 @@ type ConfigSettings struct {
 	SongColorBlur        float64                        `json:"songColorBlur"`
 	FullScreenBackground string                         `json:"fullScreenBackground"`
 	ImmersivePlayerBar   bool                           `json:"immersivePlayerBar"`
+	Hotkeys              map[string]string              `json:"hotkeys"`
+	CheckUpdateOnStartup bool                           `json:"checkUpdateOnStartup"`
 	SelectedPlaylistID   string                         `json:"selectedPlaylistId"`
 	PlaylistSorts        map[string]ConfigPlaylistSort  `json:"playlistSorts"`
 	LocalMetadata        map[string]ConfigLocalMetadata `json:"localMetadata"`

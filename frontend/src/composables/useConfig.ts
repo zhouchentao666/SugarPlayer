@@ -7,6 +7,27 @@ import type { LocalSongMetadata } from './useLocalMetadata'
 export type WindowEffect = 'none' | 'acrylic' | 'custom-image' | 'song-color'
 export type FullScreenBackground = 'static' | 'dynamic'
 export type CoverTransition = 'fade' | 'slide-left' | 'slide-both'
+export type HotkeyAction = 'togglePlay' | 'prevSong' | 'nextSong' | 'volumeUp' | 'volumeDown' | 'mute' | 'togglePlayerDetail'
+
+export const HOTKEY_ACTIONS: { value: HotkeyAction; label: string }[] = [
+  { value: 'togglePlay', label: '播放/暂停' },
+  { value: 'prevSong', label: '上一首' },
+  { value: 'nextSong', label: '下一首' },
+  { value: 'volumeUp', label: '增大音量' },
+  { value: 'volumeDown', label: '减小音量' },
+  { value: 'mute', label: '静音' },
+  { value: 'togglePlayerDetail', label: '全屏播放器' },
+]
+
+export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
+  togglePlay: ' ',
+  prevSong: 'ArrowLeft',
+  nextSong: 'ArrowRight',
+  volumeUp: 'ArrowUp',
+  volumeDown: 'ArrowDown',
+  mute: 'm',
+  togglePlayerDetail: 'i',
+}
 
 export interface PlaylistSort {
   mode: SortMode
@@ -29,6 +50,8 @@ export interface AppSettings {
   fullScreenBackground: FullScreenBackground
   coverTransition: CoverTransition
   immersivePlayerBar: boolean
+  hotkeys: Partial<Record<HotkeyAction, string>>
+  checkUpdateOnStartup: boolean
   selectedPlaylistId: string
   playlistSorts: Record<string, PlaylistSort>
   localMetadata: Record<string, LocalSongMetadata>
@@ -92,6 +115,8 @@ export function useConfig(
           fullScreenBackground: (config.settings.fullScreenBackground as FullScreenBackground) || 'static',
           coverTransition: ((config.settings as unknown as Record<string, unknown>).coverTransition as CoverTransition) || 'fade',
           immersivePlayerBar: config.settings.immersivePlayerBar ?? false,
+          hotkeys: ((config.settings as unknown as Record<string, unknown>).hotkeys as Record<string, string>) || { ...DEFAULT_HOTKEYS },
+          checkUpdateOnStartup: ((config.settings as unknown as Record<string, unknown>).checkUpdateOnStartup as boolean) ?? true,
           selectedPlaylistId: config.settings.selectedPlaylistId ?? '',
           playlistSorts: (config.settings.playlistSorts as Record<string, PlaylistSort>) ?? {},
           localMetadata: (config.settings.localMetadata as Record<string, LocalSongMetadata>) ?? {},

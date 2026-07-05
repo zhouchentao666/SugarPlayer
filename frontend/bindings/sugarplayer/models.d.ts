@@ -41,9 +41,20 @@ export interface ConfigSettings {
   songColorBlur: number;
   fullScreenBackground: string;
   immersivePlayerBar: boolean;
+  hotkeys: Record<string, string>;
+  checkUpdateOnStartup: boolean;
   selectedPlaylistId: string;
   playlistSorts: Record<string, ConfigPlaylistSort>;
   localMetadata: Record<string, ConfigLocalMetadata>;
+}
+
+export interface UpdateInfo {
+  currentVersion: string;
+  latestVersion: string;
+  hasUpdate: boolean;
+  releaseUrl: string;
+  lanzouUrl: string;
+  lanzouPassword: string;
 }
 
 export interface ConfigPlayback {

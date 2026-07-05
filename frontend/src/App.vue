@@ -1,16 +1,18 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Events } from '@wailsio/runtime'
-import { LoadConfig } from '../bindings/sugarplayer/app'
+import { LoadConfig, CheckUpdate, OpenURL } from '../bindings/sugarplayer/app'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import Settings from './components/Settings.vue'
 import PlaylistView from './components/PlaylistView.vue'
 import PlayerFooter from './components/PlayerFooter.vue'
 import PlayerDetail from './components/player/PlayerDetail.vue'
+import UpdateDialog from './components/UpdateDialog.vue'
+import type { UpdateInfo } from './components/UpdateDialog.vue'
 import { useAudioPlayer } from './composables/useAudioPlayer'
 import { usePlaylists } from './composables/usePlaylists'
-import { useConfig, type AppSettings, type ConfigPlayback, type ConfigWindow } from './composables/useConfig'
+import { useConfig, type AppSettings, type ConfigPlayback, type ConfigWindow, DEFAULT_HOTKEYS } from './composables/useConfig'
 import { useLyrics } from './composables/useLyrics'
 import { useWindowEffect } from './composables/useWindowEffect'
 import { useSession } from './composables/useSession'
@@ -26,6 +28,7 @@ const audioRef = ref<HTMLAudioElement | null>(null)
 const showPlayerDetail = ref(false)
 const showQueue = ref(false)
 const playMode = ref<PlayMode>('sequential')
+const updateInfo = ref<UpdateInfo | null>(null)
 const settings = ref<AppSettings>({
   theme: 'system',
   accentColor: '#0078d4',
@@ -42,6 +45,8 @@ const settings = ref<AppSettings>({
   fullScreenBackground: 'static',
   coverTransition: 'fade',
   immersivePlayerBar: false,
+  hotkeys: { ...DEFAULT_HOTKEYS },
+  checkUpdateOnStartup: true,
   selectedPlaylistId: '',
   playlistSorts: {},
   localMetadata: {},
@@ -191,8 +196,84 @@ function toggleQueue() {
   showQueue.value = !showQueue.value
 }
 
+function handleHotkey(e: KeyboardEvent) {
+  if (e.repeat) return
+  const target = e.target as HTMLElement | null
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    return
+  }
+
+  const key = e.key
+  const hotkeys = settings.value.hotkeys
+  const action = (Object.keys(hotkeys) as Array<keyof typeof hotkeys>).find(a => hotkeys[a] === key)
+  if (!action) return
+
+  e.preventDefault()
+  switch (action) {
+    case 'togglePlay':
+      handleTogglePlay()
+      break
+    case 'prevSong':
+      playPrev()
+      break
+    case 'nextSong':
+      playNext()
+      break
+    case 'volumeUp':
+      audio.setVolume(Math.min(100, audio.volume.value + 5))
+      break
+    case 'volumeDown':
+      audio.setVolume(Math.max(0, audio.volume.value - 5))
+      break
+    case 'mute':
+      audio.setVolume(audio.volume.value === 0 ? 100 : 0)
+      break
+    case 'togglePlayerDetail':
+      togglePlayerDetail()
+      break
+  }
+}
+
 let offFolderChanged: (() => void) | null = null
 let offMetadataChanged: (() => void) | null = null
+
+async function performUpdateCheck() {
+  if (!settings.value.checkUpdateOnStartup) return
+  try {
+    const info = await CheckUpdate()
+    if (info.hasUpdate) {
+      updateInfo.value = info
+    }
+  } catch {
+    // 自动检查时静默失败，不打扰用户
+  }
+}
+
+async function manualUpdateCheck() {
+  try {
+    const info = await CheckUpdate()
+    updateInfo.value = info
+  } catch {
+    updateInfo.value = {
+      currentVersion: '',
+      latestVersion: '',
+      hasUpdate: false,
+      releaseUrl: '',
+      lanzouUrl: '',
+      lanzouPassword: '',
+      error: true,
+    }
+  }
+}
+
+async function openUpdateUrl(url: string) {
+  try {
+    await OpenURL(url)
+  } catch {
+    window.open(url, '_blank')
+  }
+  updateInfo.value = null
+}
 
 onMounted(async () => {
   await load()
@@ -202,6 +283,8 @@ onMounted(async () => {
   }
   await rewatchFolders()
   await restoreSession()
+  await performUpdateCheck()
+  window.addEventListener('keydown', handleHotkey)
   offFolderChanged = Events.On('folder:changed', (event: any) => {
     refreshFolder(event.data)
   })
@@ -220,6 +303,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleHotkey)
   offFolderChanged?.()
   offMetadataChanged?.()
   Events.Off('folder:changed')
@@ -273,6 +357,7 @@ onUnmounted(() => {
             :settings="settings"
             @update:settings="updateSettings"
             @close="view = 'main'"
+            @check-update="manualUpdateCheck"
           />
         </Transition>
       </main>
@@ -311,6 +396,11 @@ onUnmounted(() => {
       :cover-transition="settings.coverTransition"
       @close="togglePlayerDetail"
       @seek="audio.seek"
+    />
+    <UpdateDialog
+      :info="updateInfo"
+      @close="updateInfo = null"
+      @open="openUpdateUrl"
     />
     <PlayQueue
       :show="showQueue"

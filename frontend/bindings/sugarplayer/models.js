@@ -63,6 +63,8 @@
  * @property {number} songColorBlur
  * @property {string} fullScreenBackground
  * @property {boolean} immersivePlayerBar
+ * @property {{ [_ in string]?: string } | null} hotkeys
+ * @property {boolean} checkUpdateOnStartup
  * @property {string} selectedPlaylistId
  * @property {{ [_ in string]?: ConfigPlaylistSort } | null} playlistSorts
  * @property {{ [_ in string]?: ConfigLocalMetadata } | null} localMetadata
@@ -96,6 +98,17 @@
  * @property {string} year
  * @property {number} duration
  * @property {number} bitrate
+ */
+
+/**
+ * UpdateInfo holds the result of an update check.
+ * @typedef {Object} UpdateInfo
+ * @property {string} currentVersion
+ * @property {string} latestVersion
+ * @property {boolean} hasUpdate
+ * @property {string} releaseUrl
+ * @property {string} lanzouUrl
+ * @property {string} lanzouPassword
  */
 
 // In interface mode, this file is likely to contain just comments.

@@ -13,6 +13,7 @@ const appDts = `import { CancellablePromise } from "@wailsio/runtime";
 import * as models from "./models.js";
 
 export function AudioServerURL(): CancellablePromise<string>;
+export function CheckUpdate(): CancellablePromise<models.UpdateInfo>;
 export function EmitMetadataChanged(): CancellablePromise<void>;
 export function Greet(name: string): CancellablePromise<string>;
 export function LoadConfig(): CancellablePromise<models.AppConfig>;
@@ -21,6 +22,7 @@ export function OpenInExplorer(path: string): CancellablePromise<void>;
 export function OpenMusicFiles(): CancellablePromise<string[]>;
 export function OpenSongEditor(path: string): CancellablePromise<void>;
 export function OpenMusicFolder(): CancellablePromise<string>;
+export function OpenURL(u: string): CancellablePromise<void>;
 export function ReadAudioFile(path: string): CancellablePromise<string>;
 export function ReadCoverArt(path: string): CancellablePromise<string>;
 export function ReadImageFile(path: string): CancellablePromise<string>;
@@ -76,9 +78,20 @@ export interface ConfigSettings {
   songColorBlur: number;
   fullScreenBackground: string;
   immersivePlayerBar: boolean;
+  hotkeys: Record<string, string>;
+  checkUpdateOnStartup: boolean;
   selectedPlaylistId: string;
   playlistSorts: Record<string, ConfigPlaylistSort>;
   localMetadata: Record<string, ConfigLocalMetadata>;
+}
+
+export interface UpdateInfo {
+  currentVersion: string;
+  latestVersion: string;
+  hasUpdate: boolean;
+  releaseUrl: string;
+  lanzouUrl: string;
+  lanzouPassword: string;
 }
 
 export interface ConfigPlayback {
