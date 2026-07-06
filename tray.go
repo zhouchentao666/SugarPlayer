@@ -11,6 +11,9 @@ var trayIconBytes []byte
 
 // EnableTray creates or destroys the system tray icon based on the enabled flag.
 func (a *App) EnableTray(enabled bool) error {
+	a.trayMu.Lock()
+	defer a.trayMu.Unlock()
+
 	if enabled {
 		if a.tray != nil {
 			return nil
@@ -27,6 +30,9 @@ func (a *App) EnableTray(enabled bool) error {
 
 // SetTraySongInfo updates the disabled "current song" label in the tray menu.
 func (a *App) SetTraySongInfo(label string) error {
+	a.trayMu.Lock()
+	defer a.trayMu.Unlock()
+
 	if a.traySongLabel != nil {
 		a.traySongLabel.SetLabel(label)
 	}
@@ -35,6 +41,7 @@ func (a *App) SetTraySongInfo(label string) error {
 
 func (a *App) createTray() error {
 	tray := a.app.SystemTray.New()
+	a.tray = tray
 	tray.SetIcon(a.trayIcon)
 	tray.SetTooltip("SugarMusic")
 
@@ -49,6 +56,10 @@ func (a *App) createTray() error {
 		a.app.Event.Emit("tray:next")
 	})
 	menu.AddSeparator()
+		menu.Add("主界面").OnClick(func(_ *application.Context) {
+		a.showMainWindow()
+	})
+	menu.AddSeparator()
 	menu.Add("退出").OnClick(func(_ *application.Context) {
 		a.app.Event.Emit("tray:exit")
 	})
@@ -58,8 +69,6 @@ func (a *App) createTray() error {
 		a.showMainWindow()
 	})
 
-	tray.Run()
-	a.tray = tray
 	return nil
 }
 

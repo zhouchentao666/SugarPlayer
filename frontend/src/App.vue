@@ -265,26 +265,36 @@ let offMetadataChanged: (() => void) | null = null
 let offTrayPrev: (() => void) | null = null
 let offTrayNext: (() => void) | null = null
 let offTrayExit: (() => void) | null = null
+let traySyncId = 0
+let traySyncQueue = Promise.resolve()
+
+function syncTraySettings() {
+  if (isLoading.value) return
+
+  const syncId = ++traySyncId
+  const trayEnabled = settings.value.trayEnabled
+  const closeToTray = settings.value.closeToTray
+
+  traySyncQueue = traySyncQueue
+    .catch(() => {})
+    .then(async () => {
+      if (syncId !== traySyncId) return
+      await EnableTray(trayEnabled)
+      await SetCloseToTray(trayEnabled && closeToTray)
+      if (trayEnabled) {
+        await SetTraySongInfo(buildTraySongLabel(audio.currentSong.value))
+      }
+    })
+    .catch(() => {})
+}
 
 watch(() => settings.value.autoStart, (enabled) => {
   ApplyAutoStart(enabled).catch(() => {})
 })
 
-watch(() => settings.value.trayEnabled, async (enabled) => {
-  try {
-    await EnableTray(enabled)
-    await SetCloseToTray(settings.value.closeToTray && enabled)
-  } catch {
-    // ignore
-  }
-  if (enabled) {
-    syncTraySongInfo()
-  }
-})
+watch(() => settings.value.trayEnabled, syncTraySettings)
 
-watch(() => settings.value.closeToTray, (enabled) => {
-  SetCloseToTray(settings.value.trayEnabled && enabled).catch(() => {})
-})
+watch(() => settings.value.closeToTray, syncTraySettings)
 
 watch(audio.currentSong, () => {
   syncTraySongInfo()
@@ -339,9 +349,7 @@ onMounted(async () => {
   await performUpdateCheck()
 
   ApplyAutoStart(settings.value.autoStart).catch(() => {})
-  EnableTray(settings.value.trayEnabled).catch(() => {})
-  SetCloseToTray(settings.value.trayEnabled && settings.value.closeToTray).catch(() => {})
-  syncTraySongInfo()
+  syncTraySettings()
 
   window.addEventListener('keydown', handleHotkey)
   offFolderChanged = Events.On('folder:changed', (event: any) => {
