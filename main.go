@@ -21,6 +21,7 @@ func main() {
 	})
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:           "main",
 		Title:          "SugarMusic",
 		Width:          800,
 		Height:         600,

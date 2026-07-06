@@ -43,6 +43,9 @@ export interface ConfigSettings {
   immersivePlayerBar: boolean;
   hotkeys: Record<string, string>;
   checkUpdateOnStartup: boolean;
+  autoStart: boolean;
+  trayEnabled: boolean;
+  closeToTray: boolean;
   selectedPlaylistId: string;
   playlistSorts: Record<string, ConfigPlaylistSort>;
   localMetadata: Record<string, ConfigLocalMetadata>;

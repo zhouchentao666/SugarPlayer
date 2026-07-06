@@ -167,6 +167,28 @@ function handleQualityChange(event: Event) {
         </SettingRow>
       </SettingCard>
 
+      <SettingCard title="系统">
+        <SettingRow label="开机自动启动" description="登录系统后自动运行 SugarMusic">
+          <ToggleSwitch
+            :model-value="settings.autoStart"
+            @update:model-value="value => update({ autoStart: value })"
+          />
+        </SettingRow>
+        <SettingRow label="启用系统托盘" description="在任务栏托盘显示 SugarMusic 图标">
+          <ToggleSwitch
+            :model-value="settings.trayEnabled"
+            @update:model-value="value => update({ trayEnabled: value })"
+          />
+        </SettingRow>
+        <SettingRow label="关闭按钮最小化到托盘" description="点击标题栏关闭按钮时隐藏到托盘而不是退出">
+          <ToggleSwitch
+            :model-value="settings.closeToTray"
+            :disabled="!settings.trayEnabled"
+            @update:model-value="value => update({ closeToTray: value })"
+          />
+        </SettingRow>
+      </SettingCard>
+
       <SettingCard title="更新">
         <SettingRow label="启动时检查更新" description="每次启动应用时自动检查是否有新版本">
           <ToggleSwitch

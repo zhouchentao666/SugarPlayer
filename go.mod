@@ -6,6 +6,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.108
 	go.senan.xyz/taglib v0.12.0
+	golang.org/x/sys v0.43.0
 )
 
 require (
@@ -18,7 +19,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/tetratelabs/wazero v1.11.1-0.20260428013916-2bbd517b7633 // indirect
 	github.com/wailsapp/wails/webview2 v1.0.27 // indirect
-	golang.org/x/sys v0.43.0 // indirect
 )
 
 // replace github.com/wailsapp/wails/v2 v2.12.0 => C:\Users\kobexi\go\pkg\mod

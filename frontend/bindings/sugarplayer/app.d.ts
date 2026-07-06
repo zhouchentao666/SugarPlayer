@@ -1,9 +1,11 @@
 import { CancellablePromise } from "@wailsio/runtime";
 import * as models from "./models.js";
 
+export function ApplyAutoStart(enabled: boolean): CancellablePromise<void>;
 export function AudioServerURL(): CancellablePromise<string>;
 export function CheckUpdate(): CancellablePromise<models.UpdateInfo>;
 export function EmitMetadataChanged(): CancellablePromise<void>;
+export function EnableTray(enabled: boolean): CancellablePromise<void>;
 export function Greet(name: string): CancellablePromise<string>;
 export function LoadConfig(): CancellablePromise<models.AppConfig>;
 export function OpenImageFile(): CancellablePromise<string>;
@@ -19,6 +21,8 @@ export function ReadLyrics(path: string): CancellablePromise<string>;
 export function ReadMetadata(path: string): CancellablePromise<models.SongMetadata>;
 export function SaveConfig(config: models.AppConfig): CancellablePromise<void>;
 export function ScanMusicFolder(path: string): CancellablePromise<string[]>;
+export function SetCloseToTray(enabled: boolean): CancellablePromise<void>;
+export function SetTraySongInfo(label: string): CancellablePromise<void>;
 export function StopWatching(): CancellablePromise<void>;
 export function WatchMusicFolder(path: string): CancellablePromise<void>;
 export function Version(): CancellablePromise<string>;

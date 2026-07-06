@@ -52,6 +52,9 @@ export interface AppSettings {
   immersivePlayerBar: boolean
   hotkeys: Partial<Record<HotkeyAction, string>>
   checkUpdateOnStartup: boolean
+  autoStart: boolean
+  trayEnabled: boolean
+  closeToTray: boolean
   selectedPlaylistId: string
   playlistSorts: Record<string, PlaylistSort>
   localMetadata: Record<string, LocalSongMetadata>
@@ -117,6 +120,9 @@ export function useConfig(
           immersivePlayerBar: config.settings.immersivePlayerBar ?? false,
           hotkeys: ((config.settings as unknown as Record<string, unknown>).hotkeys as Record<string, string>) || { ...DEFAULT_HOTKEYS },
           checkUpdateOnStartup: ((config.settings as unknown as Record<string, unknown>).checkUpdateOnStartup as boolean) ?? true,
+          autoStart: ((config.settings as unknown as Record<string, unknown>).autoStart as boolean) ?? false,
+          trayEnabled: ((config.settings as unknown as Record<string, unknown>).trayEnabled as boolean) ?? false,
+          closeToTray: ((config.settings as unknown as Record<string, unknown>).closeToTray as boolean) ?? false,
           selectedPlaylistId: config.settings.selectedPlaylistId ?? '',
           playlistSorts: (config.settings.playlistSorts as Record<string, PlaylistSort>) ?? {},
           localMetadata: (config.settings.localMetadata as Record<string, LocalSongMetadata>) ?? {},

@@ -7,13 +7,19 @@ import (
 	"os/exec"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 // App struct
 type App struct {
-	app     *application.App
-	audio   *AudioServer
-	watcher *FolderWatcher
+	app          *application.App
+	audio        *AudioServer
+	watcher      *FolderWatcher
+	mainWindow   application.Window
+	tray         *application.SystemTray
+	traySongLabel *application.MenuItem
+	trayIcon     []byte
+	closeToTray  bool
 }
 
 // NewApp creates a new App application struct
@@ -26,6 +32,23 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 	a.app = application.Get()
 	a.audio = newAudioServer()
 	a.watcher = newFolderWatcher(a.app)
+	a.trayIcon = trayIconBytes
+
+	if win, ok := a.app.Window.GetByName("main"); ok {
+		a.mainWindow = win
+		win.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+			if a.closeToTray && a.tray != nil {
+				event.Cancel()
+				win.Hide()
+			}
+		})
+	}
+	return nil
+}
+
+// SetCloseToTray updates whether the close button should hide the window to tray.
+func (a *App) SetCloseToTray(enabled bool) error {
+	a.closeToTray = enabled
 	return nil
 }
 

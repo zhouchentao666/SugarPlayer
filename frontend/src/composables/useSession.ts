@@ -13,7 +13,12 @@ export function useSession(
   audio: ReturnType<typeof useAudioPlayer>,
   selectPlaylist: (id: string) => void
 ) {
-  async function handleClose() {
+  async function handleClose(forceQuit = false) {
+    if (!forceQuit && settings.value.closeToTray && settings.value.trayEnabled) {
+      Window.Hide()
+      return
+    }
+
     if (settings.value.savePlaylistAndSong && audio.playlistId.value && audio.currentSong.value) {
       playbackState.value = {
         playlistId: audio.playlistId.value,

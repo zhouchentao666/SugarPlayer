@@ -65,6 +65,9 @@
  * @property {boolean} immersivePlayerBar
  * @property {{ [_ in string]?: string } | null} hotkeys
  * @property {boolean} checkUpdateOnStartup
+ * @property {boolean} autoStart
+ * @property {boolean} trayEnabled
+ * @property {boolean} closeToTray
  * @property {string} selectedPlaylistId
  * @property {{ [_ in string]?: ConfigPlaylistSort } | null} playlistSorts
  * @property {{ [_ in string]?: ConfigLocalMetadata } | null} localMetadata

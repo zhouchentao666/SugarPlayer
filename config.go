@@ -67,6 +67,9 @@ type ConfigSettings struct {
 	ImmersivePlayerBar   bool                           `json:"immersivePlayerBar"`
 	Hotkeys              map[string]string              `json:"hotkeys"`
 	CheckUpdateOnStartup bool                           `json:"checkUpdateOnStartup"`
+	AutoStart            bool                           `json:"autoStart"`
+	TrayEnabled          bool                           `json:"trayEnabled"`
+	CloseToTray          bool                           `json:"closeToTray"`
 	SelectedPlaylistID   string                         `json:"selectedPlaylistId"`
 	PlaylistSorts        map[string]ConfigPlaylistSort  `json:"playlistSorts"`
 	LocalMetadata        map[string]ConfigLocalMetadata `json:"localMetadata"`

@@ -1,7 +1,15 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Events } from '@wailsio/runtime'
-import { LoadConfig, CheckUpdate, OpenURL } from '../bindings/sugarplayer/app'
+import {
+  LoadConfig,
+  CheckUpdate,
+  OpenURL,
+  ApplyAutoStart,
+  EnableTray,
+  SetTraySongInfo,
+  SetCloseToTray,
+} from '../bindings/sugarplayer/app'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import Settings from './components/Settings.vue'
@@ -47,6 +55,9 @@ const settings = ref<AppSettings>({
   immersivePlayerBar: false,
   hotkeys: { ...DEFAULT_HOTKEYS },
   checkUpdateOnStartup: true,
+  autoStart: false,
+  trayEnabled: false,
+  closeToTray: false,
   selectedPlaylistId: '',
   playlistSorts: {},
   localMetadata: {},
@@ -158,6 +169,21 @@ function updateSettings(newSettings: AppSettings) {
 }
 const { handleClose, restoreSession } = useSession(settings, playbackState, windowState, save, playlists, audio, selectPlaylist)
 
+function handleTrayExit() {
+  handleClose(true)
+}
+
+function buildTraySongLabel(song: Song | null): string {
+  if (!song) return '未在播放'
+  const artist = song.metadata?.artist || '未知艺术家'
+  return `${song.title} - ${artist}`
+}
+
+function syncTraySongInfo() {
+  if (!settings.value.trayEnabled) return
+  SetTraySongInfo(buildTraySongLabel(audio.currentSong.value)).catch(() => {})
+}
+
 function onSelectPlaylist(id: string) {
   selectPlaylist(id)
   settings.value.selectedPlaylistId = id
@@ -236,6 +262,33 @@ function handleHotkey(e: KeyboardEvent) {
 
 let offFolderChanged: (() => void) | null = null
 let offMetadataChanged: (() => void) | null = null
+let offTrayPrev: (() => void) | null = null
+let offTrayNext: (() => void) | null = null
+let offTrayExit: (() => void) | null = null
+
+watch(() => settings.value.autoStart, (enabled) => {
+  ApplyAutoStart(enabled).catch(() => {})
+})
+
+watch(() => settings.value.trayEnabled, async (enabled) => {
+  try {
+    await EnableTray(enabled)
+    await SetCloseToTray(settings.value.closeToTray && enabled)
+  } catch {
+    // ignore
+  }
+  if (enabled) {
+    syncTraySongInfo()
+  }
+})
+
+watch(() => settings.value.closeToTray, (enabled) => {
+  SetCloseToTray(settings.value.trayEnabled && enabled).catch(() => {})
+})
+
+watch(audio.currentSong, () => {
+  syncTraySongInfo()
+})
 
 async function performUpdateCheck() {
   if (!settings.value.checkUpdateOnStartup) return
@@ -284,6 +337,12 @@ onMounted(async () => {
   await rewatchFolders()
   await restoreSession()
   await performUpdateCheck()
+
+  ApplyAutoStart(settings.value.autoStart).catch(() => {})
+  EnableTray(settings.value.trayEnabled).catch(() => {})
+  SetCloseToTray(settings.value.trayEnabled && settings.value.closeToTray).catch(() => {})
+  syncTraySongInfo()
+
   window.addEventListener('keydown', handleHotkey)
   offFolderChanged = Events.On('folder:changed', (event: any) => {
     refreshFolder(event.data)
@@ -300,14 +359,23 @@ onMounted(async () => {
       // ignore
     }
   })
+  offTrayPrev = Events.On('tray:prev', playPrev)
+  offTrayNext = Events.On('tray:next', playNext)
+  offTrayExit = Events.On('tray:exit', handleTrayExit)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleHotkey)
   offFolderChanged?.()
   offMetadataChanged?.()
+  offTrayPrev?.()
+  offTrayNext?.()
+  offTrayExit?.()
   Events.Off('folder:changed')
   Events.Off('localmetadata:changed')
+  Events.Off('tray:prev')
+  Events.Off('tray:next')
+  Events.Off('tray:exit')
 })
 </script>
 

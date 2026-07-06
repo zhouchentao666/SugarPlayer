@@ -16,6 +16,15 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
+ * ApplyAutoStart registers or removes the application from the Windows Run registry key.
+ * @param {boolean} enabled
+ * @returns {$CancellablePromise<void>}
+ */
+export function ApplyAutoStart(enabled) {
+    return $Call.ByID(4069449876, enabled);
+}
+
+/**
  * AudioServerURL returns the local audio streaming server URL.
  * @returns {$CancellablePromise<string>}
  */
@@ -38,6 +47,15 @@ export function CheckUpdate() {
  */
 export function EmitMetadataChanged() {
     return $Call.ByID(501538565);
+}
+
+/**
+ * EnableTray creates or destroys the system tray icon based on the enabled flag.
+ * @param {boolean} enabled
+ * @returns {$CancellablePromise<void>}
+ */
+export function EnableTray(enabled) {
+    return $Call.ByID(3432190842, enabled);
 }
 
 /**
@@ -169,6 +187,24 @@ export function SaveConfig(config) {
  */
 export function ScanMusicFolder(path) {
     return $Call.ByID(2919708231, path);
+}
+
+/**
+ * SetCloseToTray updates whether the close button should hide the window to tray.
+ * @param {boolean} enabled
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetCloseToTray(enabled) {
+    return $Call.ByID(3218749592, enabled);
+}
+
+/**
+ * SetTraySongInfo updates the disabled "current song" label in the tray menu.
+ * @param {string} label
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetTraySongInfo(label) {
+    return $Call.ByID(3528281766, label);
 }
 
 /**
