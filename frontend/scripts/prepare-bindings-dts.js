@@ -15,8 +15,10 @@ import * as models from "./models.js";
 export function ApplyAutoStart(enabled: boolean): CancellablePromise<void>;
 export function AudioServerURL(): CancellablePromise<string>;
 export function CheckUpdate(): CancellablePromise<models.UpdateInfo>;
+export function CloseDesktopLyric(): CancellablePromise<void>;
 export function EmitMetadataChanged(): CancellablePromise<void>;
 export function EnableTray(enabled: boolean): CancellablePromise<void>;
+export function GetDesktopLyricConfig(): CancellablePromise<string>;
 export function Greet(name: string): CancellablePromise<string>;
 export function LoadConfig(): CancellablePromise<models.AppConfig>;
 export function OpenImageFile(): CancellablePromise<string>;
@@ -33,8 +35,12 @@ export function ReadMetadata(path: string): CancellablePromise<models.SongMetada
 export function SaveConfig(config: models.AppConfig): CancellablePromise<void>;
 export function ScanMusicFolder(path: string): CancellablePromise<string[]>;
 export function SetCloseToTray(enabled: boolean): CancellablePromise<void>;
+export function SetDesktopLyricBounds(x: number, y: number, width: number, height: number): CancellablePromise<void>;
+export function SetDesktopLyricIgnoreMouseEvents(ignore: boolean): CancellablePromise<void>;
 export function SetTraySongInfo(label: string): CancellablePromise<void>;
+export function ShowMainWindow(): CancellablePromise<void>;
 export function StopWatching(): CancellablePromise<void>;
+export function ToggleDesktopLyric(enabled: boolean): CancellablePromise<void>;
 export function WatchMusicFolder(path: string): CancellablePromise<void>;
 export function Version(): CancellablePromise<string>;
 `
@@ -67,6 +73,29 @@ export interface ConfigLocalMetadata {
   lyricsFormat?: string;
 }
 
+export interface ConfigDesktopLyric {
+  enabled: boolean;
+  fontSize: number;
+  mainColor: string;
+  unplayedColor: string;
+  shadowColor: string;
+  fontWeight: number;
+  position: string;
+  alwaysShowPlayInfo: boolean;
+  animation: boolean;
+  showYrc: boolean;
+  showTran: boolean;
+  isDoubleLine: boolean;
+  textBackgroundMask: boolean;
+  backgroundMaskColor: string;
+  fontFamily: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isLock: boolean;
+}
+
 export interface ConfigSettings {
   theme: string;
   accentColor: string;
@@ -87,6 +116,7 @@ export interface ConfigSettings {
   autoStart: boolean;
   trayEnabled: boolean;
   closeToTray: boolean;
+  desktopLyric: ConfigDesktopLyric;
   selectedPlaylistId: string;
   playlistSorts: Record<string, ConfigPlaylistSort>;
   localMetadata: Record<string, ConfigLocalMetadata>;

@@ -56,7 +56,16 @@ func (a *App) createTray() error {
 		a.app.Event.Emit("tray:next")
 	})
 	menu.AddSeparator()
-		menu.Add("主界面").OnClick(func(_ *application.Context) {
+	a.trayLyricToggleLabel = menu.Add("显示桌面歌词")
+	a.trayLyricToggleLabel.OnClick(func(_ *application.Context) {
+		a.toggleDesktopLyricFromTray()
+	})
+	a.trayLyricLockLabel = menu.Add("锁定桌面歌词")
+	a.trayLyricLockLabel.OnClick(func(_ *application.Context) {
+		a.toggleDesktopLyricLockFromTray()
+	})
+	menu.AddSeparator()
+	menu.Add("主界面").OnClick(func(_ *application.Context) {
 		a.showMainWindow()
 	})
 	menu.AddSeparator()
@@ -64,12 +73,48 @@ func (a *App) createTray() error {
 		a.app.Event.Emit("tray:exit")
 	})
 	tray.SetMenu(menu)
+	a.updateTrayLyricMenu()
 
 	tray.OnClick(func() {
 		a.showMainWindow()
 	})
 
 	return nil
+}
+
+func (a *App) toggleDesktopLyricFromTray() {
+	cfg := a.loadDesktopLyricConfig()
+	next := !cfg.Enabled
+	_ = a.ToggleDesktopLyric(next)
+	a.updateTrayLyricMenu()
+}
+
+func (a *App) toggleDesktopLyricLockFromTray() {
+	cfg := a.loadDesktopLyricConfig()
+	next := !cfg.IsLock
+	_ = a.SetDesktopLyricIgnoreMouseEvents(next)
+	a.updateTrayLyricMenu()
+}
+
+func (a *App) updateTrayLyricMenu() {
+	if a.tray == nil {
+		return
+	}
+	cfg := a.loadDesktopLyricConfig()
+	if a.trayLyricToggleLabel != nil {
+		if cfg.Enabled {
+			a.trayLyricToggleLabel.SetLabel("隐藏桌面歌词")
+		} else {
+			a.trayLyricToggleLabel.SetLabel("显示桌面歌词")
+		}
+	}
+	if a.trayLyricLockLabel != nil {
+		if cfg.IsLock {
+			a.trayLyricLockLabel.SetLabel("解锁桌面歌词")
+		} else {
+			a.trayLyricLockLabel.SetLabel("锁定桌面歌词")
+		}
+	}
 }
 
 func (a *App) showMainWindow() {

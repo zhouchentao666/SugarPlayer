@@ -12,6 +12,31 @@
  */
 
 /**
+ * ConfigDesktopLyric stores desktop lyric window and style settings.
+ * @typedef {Object} ConfigDesktopLyric
+ * @property {boolean} enabled
+ * @property {number} fontSize
+ * @property {string} mainColor
+ * @property {string} unplayedColor
+ * @property {string} shadowColor
+ * @property {number} fontWeight
+ * @property {string} position
+ * @property {boolean} alwaysShowPlayInfo
+ * @property {boolean} animation
+ * @property {boolean} showYrc
+ * @property {boolean} showTran
+ * @property {boolean} isDoubleLine
+ * @property {boolean} textBackgroundMask
+ * @property {string} backgroundMaskColor
+ * @property {string} fontFamily
+ * @property {number} x
+ * @property {number} y
+ * @property {number} width
+ * @property {number} height
+ * @property {boolean} isLock
+ */
+
+/**
  * ConfigLocalMetadata stores user-edited metadata overrides for a song.
  * @typedef {Object} ConfigLocalMetadata
  * @property {string} title
@@ -68,6 +93,7 @@
  * @property {boolean} autoStart
  * @property {boolean} trayEnabled
  * @property {boolean} closeToTray
+ * @property {ConfigDesktopLyric} desktopLyric
  * @property {string} selectedPlaylistId
  * @property {{ [_ in string]?: ConfigPlaylistSort } | null} playlistSorts
  * @property {{ [_ in string]?: ConfigLocalMetadata } | null} localMetadata

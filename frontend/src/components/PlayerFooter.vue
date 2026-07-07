@@ -18,6 +18,7 @@ defineProps<{
   showDetail?: boolean
   playMode: PlayMode
   immersive?: boolean
+  desktopLyricEnabled?: boolean
 }>()
 
 const isHovered = ref(false)
@@ -32,6 +33,7 @@ const emit = defineEmits<{
   (e: 'open-detail'): void
   (e: 'cycle-mode'): void
   (e: 'toggle-queue'): void
+  (e: 'toggle-desktop-lyric'): void
 }>()
 
 function formatDuration(seconds: number): string {
@@ -78,6 +80,16 @@ function formatDuration(seconds: number): string {
 
       <div class="section right" :class="{ faded: immersive && !isHovered }">
         <span class="time-label">{{ formatDuration(currentTime) }} / {{ formatDuration(duration || 0) }}</span>
+        <button
+          class="side-btn lyric-btn"
+          :class="{ active: desktopLyricEnabled }"
+          title="桌面歌词"
+          @click="emit('toggle-desktop-lyric')"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 6h12v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2z" />
+          </svg>
+        </button>
         <VolumeControl :volume="volume" @set-volume="v => emit('set-volume', v)" />
         <PlaybackRateControl :playback-rate="playbackRate" @set-playback-rate="r => emit('set-playback-rate', r)" />
       </div>
@@ -157,6 +169,42 @@ function formatDuration(seconds: number): string {
   color: var(--fluent-text-secondary);
   font-variant-numeric: tabular-nums;
   transition: color 500ms ease;
+}
+
+.lyric-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.1s ease, color 0.18s ease;
+}
+
+.lyric-btn:hover {
+  background: var(--fluent-bg-hover);
+}
+
+.lyric-btn.active {
+  color: var(--fluent-accent);
+}
+
+.lyric-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.player-footer.detail-mode .lyric-btn {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.player-footer.detail-mode .lyric-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .section.center,

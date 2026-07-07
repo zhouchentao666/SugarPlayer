@@ -13,15 +13,19 @@ import (
 
 // App struct
 type App struct {
-	app           *application.App
-	audio         *AudioServer
-	watcher       *FolderWatcher
-	mainWindow    application.Window
-	trayMu        sync.Mutex
-	tray          *application.SystemTray
-	traySongLabel *application.MenuItem
-	trayIcon      []byte
-	closeToTray   bool
+	app                    *application.App
+	audio                  *AudioServer
+	watcher                *FolderWatcher
+	mainWindow             application.Window
+	trayMu                 sync.Mutex
+	tray                   *application.SystemTray
+	traySongLabel          *application.MenuItem
+	trayLyricToggleLabel   *application.MenuItem
+	trayLyricLockLabel     *application.MenuItem
+	trayIcon               []byte
+	closeToTray            bool
+	desktopLyricWindow     application.Window
+	desktopLyricWindowMu   sync.Mutex
 }
 
 // NewApp creates a new App application struct
@@ -113,4 +117,10 @@ func (a *App) EmitMetadataChanged() {
 // OpenURL opens the given URL in the default system browser.
 func (a *App) OpenURL(u string) error {
 	return a.app.Browser.OpenURL(u)
+}
+
+// ShowMainWindow shows and focuses the main application window.
+func (a *App) ShowMainWindow() error {
+	a.showMainWindow()
+	return nil
 }

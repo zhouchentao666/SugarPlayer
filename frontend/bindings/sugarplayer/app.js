@@ -42,6 +42,14 @@ export function CheckUpdate() {
 }
 
 /**
+ * CloseDesktopLyric closes and destroys the desktop lyric window.
+ * @returns {$CancellablePromise<void>}
+ */
+export function CloseDesktopLyric() {
+    return $Call.ByID(2378771400);
+}
+
+/**
  * EmitMetadataChanged emits an application-wide event to notify all windows that local metadata has changed.
  * @returns {$CancellablePromise<void>}
  */
@@ -56,6 +64,14 @@ export function EmitMetadataChanged() {
  */
 export function EnableTray(enabled) {
     return $Call.ByID(3432190842, enabled);
+}
+
+/**
+ * GetDesktopLyricConfig returns the current desktop lyric configuration as JSON.
+ * @returns {$CancellablePromise<string>}
+ */
+export function GetDesktopLyricConfig() {
+    return $Call.ByID(3903076466);
 }
 
 /**
@@ -199,6 +215,27 @@ export function SetCloseToTray(enabled) {
 }
 
 /**
+ * SetDesktopLyricBounds updates the desktop lyric window bounds and persists them.
+ * @param {number} x
+ * @param {number} y
+ * @param {number} width
+ * @param {number} height
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetDesktopLyricBounds(x, y, width, height) {
+    return $Call.ByID(3724328361, x, y, width, height);
+}
+
+/**
+ * SetDesktopLyricIgnoreMouseEvents toggles mouse event ignoring for the lyric window.
+ * @param {boolean} ignore
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetDesktopLyricIgnoreMouseEvents(ignore) {
+    return $Call.ByID(1835474496, ignore);
+}
+
+/**
  * SetTraySongInfo updates the disabled "current song" label in the tray menu.
  * @param {string} label
  * @returns {$CancellablePromise<void>}
@@ -208,11 +245,28 @@ export function SetTraySongInfo(label) {
 }
 
 /**
+ * ShowMainWindow shows and focuses the main application window.
+ * @returns {$CancellablePromise<void>}
+ */
+export function ShowMainWindow() {
+    return $Call.ByID(3189675457);
+}
+
+/**
  * StopWatching stops watching the music folder.
  * @returns {$CancellablePromise<void>}
  */
 export function StopWatching() {
     return $Call.ByID(3671977832);
+}
+
+/**
+ * ToggleDesktopLyric shows or hides the desktop lyric window.
+ * @param {boolean} enabled
+ * @returns {$CancellablePromise<void>}
+ */
+export function ToggleDesktopLyric(enabled) {
+    return $Call.ByID(235078, enabled);
 }
 
 /**

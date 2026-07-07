@@ -8,6 +8,7 @@ export type WindowEffect = 'none' | 'acrylic' | 'custom-image' | 'song-color'
 export type FullScreenBackground = 'static' | 'dynamic'
 export type CoverTransition = 'fade' | 'slide-left' | 'slide-both'
 export type HotkeyAction = 'togglePlay' | 'prevSong' | 'nextSong' | 'volumeUp' | 'volumeDown' | 'mute' | 'togglePlayerDetail'
+export type DesktopLyricPosition = 'left' | 'center' | 'right' | 'both'
 
 export const HOTKEY_ACTIONS: { value: HotkeyAction; label: string }[] = [
   { value: 'togglePlay', label: '播放/暂停' },
@@ -34,6 +35,52 @@ export interface PlaylistSort {
   order: SortOrder
 }
 
+export interface DesktopLyricConfig {
+  enabled: boolean
+  fontSize: number
+  mainColor: string
+  unplayedColor: string
+  shadowColor: string
+  fontWeight: number
+  position: DesktopLyricPosition
+  alwaysShowPlayInfo: boolean
+  animation: boolean
+  showYrc: boolean
+  showTran: boolean
+  isDoubleLine: boolean
+  textBackgroundMask: boolean
+  backgroundMaskColor: string
+  fontFamily: string
+  x: number
+  y: number
+  width: number
+  height: number
+  isLock: boolean
+}
+
+export const DEFAULT_DESKTOP_LYRIC: DesktopLyricConfig = {
+  enabled: false,
+  fontSize: 30,
+  mainColor: '#73BCFC',
+  unplayedColor: 'rgba(255, 255, 255, 0.5)',
+  shadowColor: 'rgba(255, 255, 255, 0.5)',
+  fontWeight: 600,
+  position: 'center',
+  alwaysShowPlayInfo: false,
+  animation: true,
+  showYrc: true,
+  showTran: false,
+  isDoubleLine: true,
+  textBackgroundMask: false,
+  backgroundMaskColor: 'rgba(0,0,0,0.2)',
+  fontFamily: 'PingFangSC-Semibold, system-ui, -apple-system, sans-serif',
+  x: 0,
+  y: 0,
+  width: 800,
+  height: 180,
+  isLock: false,
+}
+
 export interface AppSettings {
   theme: 'system' | 'light' | 'dark'
   accentColor: string
@@ -55,6 +102,7 @@ export interface AppSettings {
   autoStart: boolean
   trayEnabled: boolean
   closeToTray: boolean
+  desktopLyric: DesktopLyricConfig
   selectedPlaylistId: string
   playlistSorts: Record<string, PlaylistSort>
   localMetadata: Record<string, LocalSongMetadata>
@@ -71,6 +119,35 @@ export interface ConfigWindow {
   y: number
   width: number
   height: number
+}
+
+function parseDesktopLyricConfig(raw: unknown): DesktopLyricConfig {
+  const cfg = { ...DEFAULT_DESKTOP_LYRIC }
+  if (!raw || typeof raw !== 'object') return cfg
+  const src = raw as Partial<DesktopLyricConfig>
+  if (typeof src.enabled === 'boolean') cfg.enabled = src.enabled
+  if (typeof src.fontSize === 'number' && src.fontSize > 0) cfg.fontSize = src.fontSize
+  if (typeof src.mainColor === 'string' && src.mainColor) cfg.mainColor = src.mainColor
+  if (typeof src.unplayedColor === 'string' && src.unplayedColor) cfg.unplayedColor = src.unplayedColor
+  if (typeof src.shadowColor === 'string' && src.shadowColor) cfg.shadowColor = src.shadowColor
+  if (typeof src.fontWeight === 'number' && src.fontWeight > 0) cfg.fontWeight = src.fontWeight
+  if (src.position === 'left' || src.position === 'center' || src.position === 'right' || src.position === 'both') {
+    cfg.position = src.position
+  }
+  if (typeof src.alwaysShowPlayInfo === 'boolean') cfg.alwaysShowPlayInfo = src.alwaysShowPlayInfo
+  if (typeof src.animation === 'boolean') cfg.animation = src.animation
+  if (typeof src.showYrc === 'boolean') cfg.showYrc = src.showYrc
+  if (typeof src.showTran === 'boolean') cfg.showTran = src.showTran
+  if (typeof src.isDoubleLine === 'boolean') cfg.isDoubleLine = src.isDoubleLine
+  if (typeof src.textBackgroundMask === 'boolean') cfg.textBackgroundMask = src.textBackgroundMask
+  if (typeof src.backgroundMaskColor === 'string' && src.backgroundMaskColor) cfg.backgroundMaskColor = src.backgroundMaskColor
+  if (typeof src.fontFamily === 'string' && src.fontFamily) cfg.fontFamily = src.fontFamily
+  if (typeof src.x === 'number') cfg.x = src.x
+  if (typeof src.y === 'number') cfg.y = src.y
+  if (typeof src.width === 'number' && src.width > 0) cfg.width = src.width
+  if (typeof src.height === 'number' && src.height > 0) cfg.height = src.height
+  if (typeof src.isLock === 'boolean') cfg.isLock = src.isLock
+  return cfg
 }
 
 export function useConfig(
@@ -123,6 +200,7 @@ export function useConfig(
           autoStart: ((config.settings as unknown as Record<string, unknown>).autoStart as boolean) ?? false,
           trayEnabled: ((config.settings as unknown as Record<string, unknown>).trayEnabled as boolean) ?? false,
           closeToTray: ((config.settings as unknown as Record<string, unknown>).closeToTray as boolean) ?? false,
+          desktopLyric: parseDesktopLyricConfig((config.settings as unknown as Record<string, unknown>).desktopLyric),
           selectedPlaylistId: config.settings.selectedPlaylistId ?? '',
           playlistSorts: (config.settings.playlistSorts as Record<string, PlaylistSort>) ?? {},
           localMetadata: (config.settings.localMetadata as Record<string, LocalSongMetadata>) ?? {},

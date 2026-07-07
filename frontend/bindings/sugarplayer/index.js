@@ -15,6 +15,11 @@ import * as $models from "./models.js";
  */
 
 /**
+ * ConfigDesktopLyric stores desktop lyric window and style settings.
+ * @typedef {$models.ConfigDesktopLyric} ConfigDesktopLyric
+ */
+
+/**
  * ConfigLocalMetadata stores user-edited metadata overrides for a song.
  * @typedef {$models.ConfigLocalMetadata} ConfigLocalMetadata
  */

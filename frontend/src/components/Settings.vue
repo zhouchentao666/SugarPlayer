@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { Version } from '../../bindings/sugarplayer/app'
-import { type AppSettings, HOTKEY_ACTIONS, type HotkeyAction } from '../composables/useConfig'
+import { type AppSettings, HOTKEY_ACTIONS, type HotkeyAction, type DesktopLyricConfig } from '../composables/useConfig'
 import SettingCard from './settings/SettingCard.vue'
 import SettingRow from './settings/SettingRow.vue'
 import SegmentedControl from './settings/SegmentedControl.vue'
@@ -9,6 +9,7 @@ import ColorPicker from './settings/ColorPicker.vue'
 import ToggleSwitch from './settings/ToggleSwitch.vue'
 import WindowEffectSettings from './settings/WindowEffectSettings.vue'
 import HotkeyInput from './settings/HotkeyInput.vue'
+import DesktopLyricSettings from './settings/DesktopLyricSettings.vue'
 
 const props = defineProps<{
   settings: AppSettings
@@ -42,6 +43,14 @@ function updateHotkey(action: HotkeyAction, key: string | undefined) {
     delete next[action]
   }
   update({ hotkeys: next })
+}
+
+function updateDesktopLyric(config: DesktopLyricConfig) {
+  emit('update:settings', { ...props.settings, desktopLyric: { ...config, enabled: props.settings.desktopLyric.enabled } })
+}
+
+function updateDesktopLyricEnabled(enabled: boolean) {
+  emit('update:settings', { ...props.settings, desktopLyric: { ...props.settings.desktopLyric, enabled } })
 }
 
 const themes = [
@@ -189,6 +198,15 @@ function handleQualityChange(event: Event) {
         </SettingRow>
       </SettingCard>
 
+      <SettingCard title="桌面歌词">
+        <DesktopLyricSettings
+          :config="settings.desktopLyric"
+          :enabled="settings.desktopLyric.enabled"
+          @update:config="updateDesktopLyric"
+          @update:enabled="updateDesktopLyricEnabled"
+        />
+      </SettingCard>
+
       <SettingCard title="更新">
         <SettingRow label="启动时检查更新" description="每次启动应用时自动检查是否有新版本">
           <ToggleSwitch
@@ -218,21 +236,18 @@ function handleQualityChange(event: Event) {
   overflow-y: auto;
   box-sizing: border-box;
 }
-
 .settings-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
 }
-
 .settings-header h1 {
   margin: 0;
   font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.2px;
 }
-
 .close-btn {
   width: 34px;
   height: 34px;
@@ -244,17 +259,14 @@ function handleQualityChange(event: Event) {
   cursor: pointer;
   transition: background 0.18s ease;
 }
-
 .close-btn:hover {
   background: var(--fluent-bg-active);
 }
-
 .settings-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-
 .fluent-select {
   padding: 6px 10px;
   border-radius: 6px;
@@ -265,13 +277,11 @@ function handleQualityChange(event: Event) {
   outline: none;
   cursor: pointer;
 }
-
 .setting-value {
   font-size: 13px;
   color: var(--fluent-text-secondary);
   white-space: nowrap;
 }
-
 .fluent-btn {
   padding: 6px 14px;
   border: 1px solid var(--fluent-border);
@@ -282,7 +292,6 @@ function handleQualityChange(event: Event) {
   cursor: pointer;
   transition: background 0.18s ease;
 }
-
 .fluent-btn:hover {
   background: var(--fluent-bg-active);
 }

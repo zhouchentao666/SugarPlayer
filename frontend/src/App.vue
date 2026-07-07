@@ -9,6 +9,9 @@ import {
   EnableTray,
   SetTraySongInfo,
   SetCloseToTray,
+  ShowMainWindow,
+  CloseDesktopLyric,
+  SetDesktopLyricIgnoreMouseEvents,
 } from '../bindings/sugarplayer/app'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
@@ -20,10 +23,13 @@ import UpdateDialog from './components/UpdateDialog.vue'
 import type { UpdateInfo } from './components/UpdateDialog.vue'
 import { useAudioPlayer } from './composables/useAudioPlayer'
 import { usePlaylists } from './composables/usePlaylists'
-import { useConfig, type AppSettings, type ConfigPlayback, type ConfigWindow, DEFAULT_HOTKEYS } from './composables/useConfig'
+import { useConfig, type AppSettings, type ConfigPlayback, type ConfigWindow, DEFAULT_HOTKEYS, DEFAULT_DESKTOP_LYRIC } from './composables/useConfig'
 import { useLyrics } from './composables/useLyrics'
 import { useWindowEffect } from './composables/useWindowEffect'
 import { useSession } from './composables/useSession'
+import { useDesktopLyricBridge } from './composables/useDesktopLyricBridge'
+import { useDesktopLyric } from './composables/useDesktopLyric'
+import DesktopLyricApp from './DesktopLyricApp.vue'
 import PlayQueue from './components/player/PlayQueue.vue'
 import type { PlayMode } from './components/player/PlayerControls.vue'
 import type { Song } from './types'
@@ -58,6 +64,7 @@ const settings = ref<AppSettings>({
   autoStart: false,
   trayEnabled: false,
   closeToTray: false,
+  desktopLyric: { ...DEFAULT_DESKTOP_LYRIC },
   selectedPlaylistId: '',
   playlistSorts: {},
   localMetadata: {},
@@ -89,6 +96,29 @@ const audio = useAudioPlayer({
 
 const lyrics = useLyrics(audio.currentSong)
 const { appStyle, layerStyle } = useWindowEffect(settings, audio.coverUrl)
+
+const { dispose: disposeBridge } = useDesktopLyricBridge({
+  currentSong: audio.currentSong,
+  lyrics: lyrics.lyrics,
+  isPlaying: audio.isPlaying,
+  currentTime: audio.currentTime,
+  handlers: {
+    onPrev: playPrev,
+    onNext: playNext,
+    onToggle: handleTogglePlay,
+    onShowMain: () => ShowMainWindow().catch(() => {}),
+    onClose: () => {
+      CloseDesktopLyric().catch(() => {})
+      settings.value.desktopLyric.enabled = false
+    },
+    onLockChange: (locked: boolean) => {
+      settings.value.desktopLyric.isLock = locked
+      SetDesktopLyricIgnoreMouseEvents(locked).catch(() => {})
+    },
+  },
+})
+
+const { toggle: toggleDesktopLyric, openIfEnabled, dispose: disposeLyric } = useDesktopLyric({ settings })
 
 const lyricTime = computed(() => Math.floor(audio.currentTime.value * 1000))
 
@@ -350,6 +380,7 @@ onMounted(async () => {
 
   ApplyAutoStart(settings.value.autoStart).catch(() => {})
   syncTraySettings()
+  await openIfEnabled()
 
   window.addEventListener('keydown', handleHotkey)
   offFolderChanged = Events.On('folder:changed', (event: any) => {
@@ -384,6 +415,8 @@ onUnmounted(() => {
   Events.Off('tray:prev')
   Events.Off('tray:next')
   Events.Off('tray:exit')
+  disposeBridge()
+  disposeLyric()
 })
 </script>
 
@@ -449,6 +482,7 @@ onUnmounted(() => {
       :show-detail="showPlayerDetail"
       :play-mode="playMode"
       :immersive="settings.immersivePlayerBar"
+      :desktop-lyric-enabled="settings.desktopLyric.enabled"
       @toggle-play="handleTogglePlay"
       @prev="playPrev"
       @next="playNext"
@@ -458,6 +492,7 @@ onUnmounted(() => {
       @open-detail="togglePlayerDetail"
       @cycle-mode="cyclePlayMode"
       @toggle-queue="toggleQueue"
+      @toggle-desktop-lyric="toggleDesktopLyric"
     />
     <PlayerDetail
       :show="showPlayerDetail"

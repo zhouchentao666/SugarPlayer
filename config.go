@@ -49,6 +49,30 @@ type ConfigLocalMetadata struct {
 	LyricsFormat string `json:"lyricsFormat"`
 }
 
+// ConfigDesktopLyric stores desktop lyric window and style settings.
+type ConfigDesktopLyric struct {
+	Enabled             bool   `json:"enabled"`
+	FontSize            int    `json:"fontSize"`
+	MainColor           string `json:"mainColor"`
+	UnplayedColor       string `json:"unplayedColor"`
+	ShadowColor         string `json:"shadowColor"`
+	FontWeight          int    `json:"fontWeight"`
+	Position            string `json:"position"`
+	AlwaysShowPlayInfo  bool   `json:"alwaysShowPlayInfo"`
+	Animation           bool   `json:"animation"`
+	ShowYrc             bool   `json:"showYrc"`
+	ShowTran            bool   `json:"showTran"`
+	IsDoubleLine        bool   `json:"isDoubleLine"`
+	TextBackgroundMask  bool   `json:"textBackgroundMask"`
+	BackgroundMaskColor string `json:"backgroundMaskColor"`
+	FontFamily          string `json:"fontFamily"`
+	X                   int    `json:"x"`
+	Y                   int    `json:"y"`
+	Width               int    `json:"width"`
+	Height              int    `json:"height"`
+	IsLock              bool   `json:"isLock"`
+}
+
 // ConfigSettings represents app settings in persisted config.
 type ConfigSettings struct {
 	Theme                string                         `json:"theme"`
@@ -70,6 +94,7 @@ type ConfigSettings struct {
 	AutoStart            bool                           `json:"autoStart"`
 	TrayEnabled          bool                           `json:"trayEnabled"`
 	CloseToTray          bool                           `json:"closeToTray"`
+	DesktopLyric         ConfigDesktopLyric             `json:"desktopLyric"`
 	SelectedPlaylistID   string                         `json:"selectedPlaylistId"`
 	PlaylistSorts        map[string]ConfigPlaylistSort  `json:"playlistSorts"`
 	LocalMetadata        map[string]ConfigLocalMetadata `json:"localMetadata"`

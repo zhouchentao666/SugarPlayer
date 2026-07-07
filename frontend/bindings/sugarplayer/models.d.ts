@@ -26,6 +26,29 @@ export interface ConfigLocalMetadata {
   lyricsFormat?: string;
 }
 
+export interface ConfigDesktopLyric {
+  enabled: boolean;
+  fontSize: number;
+  mainColor: string;
+  unplayedColor: string;
+  shadowColor: string;
+  fontWeight: number;
+  position: string;
+  alwaysShowPlayInfo: boolean;
+  animation: boolean;
+  showYrc: boolean;
+  showTran: boolean;
+  isDoubleLine: boolean;
+  textBackgroundMask: boolean;
+  backgroundMaskColor: string;
+  fontFamily: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isLock: boolean;
+}
+
 export interface ConfigSettings {
   theme: string;
   accentColor: string;
@@ -46,6 +69,7 @@ export interface ConfigSettings {
   autoStart: boolean;
   trayEnabled: boolean;
   closeToTray: boolean;
+  desktopLyric: ConfigDesktopLyric;
   selectedPlaylistId: string;
   playlistSorts: Record<string, ConfigPlaylistSort>;
   localMetadata: Record<string, ConfigLocalMetadata>;
