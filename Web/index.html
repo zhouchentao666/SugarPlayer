@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SugarPlayer · 优雅的本地与在线音乐播放器</title>
+<meta name="description" content="SugarPlayer 是一款支持本地音乐管理与在线音乐搜索播放的桌面音乐播放器，基于 Wails3 + Vue3 打造。" />
+<style>
+  :root {
+    --bg: #0c0e16;
+    --bg-soft: #141826;
+    --card: rgba(255, 255, 255, 0.04);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text: #e8eaf2;
+    --text-dim: #9aa2b8;
+    --accent: #6c5ce7;
+    --accent-2: #00cec9;
+    --accent-3: #fd79a8;
+    --radius: 18px;
+    --max: 1140px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  /* ===== Animated background ===== */
+  .bg-orbs { position: fixed; inset: 0; z-index: -1; overflow: hidden; }
+  .bg-orbs span {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5;
+    animation: float 18s ease-in-out infinite;
+  }
+  .bg-orbs span:nth-child(1) { width: 480px; height: 480px; background: var(--accent); top: -120px; left: -80px; }
+  .bg-orbs span:nth-child(2) { width: 420px; height: 420px; background: var(--accent-2); bottom: -120px; right: -60px; animation-delay: -6s; }
+  .bg-orbs span:nth-child(3) { width: 360px; height: 360px; background: var(--accent-3); top: 40%; left: 55%; animation-delay: -12s; opacity: 0.35; }
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(40px, -30px) scale(1.1); }
+  }
+
+  /* ===== Nav ===== */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(16px);
+    background: rgba(12, 14, 22, 0.6);
+    border-bottom: 1px solid var(--card-border);
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; font-size: 16px;
+  }
+  .nav-links { display: flex; gap: 28px; font-size: 14px; color: var(--text-dim); }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600;
+    background: linear-gradient(135deg, var(--accent), var(--accent-3));
+    color: #fff; transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(108, 92, 231, 0.45); }
+
+  /* ===== Hero ===== */
+  .hero { text-align: center; padding: 96px 0 64px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; color: var(--text-dim);
+    background: var(--card); border: 1px solid var(--card-border); margin-bottom: 26px;
+  }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 10px var(--accent-2); }
+  .hero h1 {
+    font-size: clamp(38px, 6vw, 68px); line-height: 1.1; font-weight: 800;
+    background: linear-gradient(120deg, #fff 20%, var(--accent-2) 60%, var(--accent));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 20px;
+  }
+  .hero p.sub { font-size: 18px; color: var(--text-dim); max-width: 620px; margin: 0 auto 36px; }
+  .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px; padding: 14px 28px; border-radius: 999px;
+    font-size: 15px; font-weight: 600; transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-3)); color: #fff; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(108, 92, 231, 0.5); }
+  .btn-ghost { background: var(--card); border-color: var(--card-border); color: var(--text); }
+  .btn-ghost:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .version-note { margin-top: 16px; font-size: 13px; color: var(--text-dim); }
+
+  /* ===== Section ===== */
+  section.block { padding: 72px 0; }
+  .section-head { text-align: center; margin-bottom: 48px; }
+  .section-head .eyebrow { color: var(--accent-2); font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+  .section-head h2 { font-size: clamp(28px, 4vw, 40px); margin: 10px 0 12px; font-weight: 800; }
+  .section-head p { color: var(--text-dim); max-width: 560px; margin: 0 auto; }
+
+  /* ===== Features ===== */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .feature {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 28px; transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .feature:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .feature .ico {
+    width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
+    font-size: 22px; margin-bottom: 16px;
+    background: linear-gradient(135deg, rgba(108,92,231,0.25), rgba(0,206,201,0.25));
+  }
+  .feature h3 { font-size: 18px; margin-bottom: 8px; }
+  .feature p { color: var(--text-dim); font-size: 14.5px; }
+
+  /* ===== Screenshots ===== */
+  .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .shot {
+    border-radius: var(--radius); overflow: hidden; border: 1px solid var(--card-border);
+    background: var(--bg-soft); transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .shot:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+  .shot img { width: 100%; height: 100%; object-fit: cover; display: block; aspect-ratio: 16/10; }
+  .shot:nth-child(1) { grid-column: span 2; }
+  .shot:nth-child(2) { grid-column: span 1; }
+
+  /* ===== Channel & video ===== */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: stretch; }
+  .panel {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 30px; display: flex; flex-direction: column;
+  }
+  .panel h3 { font-size: 20px; margin-bottom: 12px; }
+  .panel p { color: var(--text-dim); font-size: 14.5px; flex: 1; }
+  .channel-link {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 20px; align-self: flex-start;
+    padding: 13px 24px; border-radius: 999px; font-weight: 600; color: #fff;
+    background: linear-gradient(135deg, #1e88e5, #00cec9);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .channel-link:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(30, 136, 229, 0.45); }
+  .video-wrap { position: relative; padding-top: 56.25%; border-radius: 14px; overflow: hidden; background: #000; }
+  .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  /* ===== Donate ===== */
+  .donate { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; }
+  .donate-card {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+    padding: 22px; text-align: center; width: 200px;
+  }
+  .donate-card img { width: 150px; height: 150px; object-fit: contain; border-radius: 12px; background: #fff; padding: 8px; }
+  .donate-card p { margin-top: 12px; color: var(--text-dim); font-size: 14px; }
+
+  /* ===== Footer ===== */
+  footer { border-top: 1px solid var(--card-border); padding: 40px 0; text-align: center; color: var(--text-dim); font-size: 14px; }
+  footer a { color: var(--accent-2); }
+  footer .links { display: flex; gap: 22px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 860px) {
+    .features, .shots { grid-template-columns: 1fr; }
+    .shot:nth-child(1), .shot:nth-child(2) { grid-column: span 1; }
+    .split { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="bg-orbs"><span></span><span></span><span></span></div>
+
+  <header>
+    <div class="wrap nav">
+      <div class="brand">
+        <span class="logo">🎵</span>
+        <span>SugarPlayer</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#screenshots">界面</a>
+        <a href="#channel">频道</a>
+        <a href="#video">视频</a>
+        <a href="#donate">支持</a>
+      </nav>
+      <a class="nav-cta" href="#download">下载</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero wrap" id="download">
+      <span class="badge"><span class="dot"></span>当前版本 v0.0.9 · Windows</span>
+      <h1>优雅聆听<br />本地与在线的每一首歌</h1>
+      <p class="sub">SugarPlayer 是一款基于 Wails3 + Vue3 打造的桌面音乐播放器，集本地音乐管理、在线搜索播放、歌词与桌面歌词于一体。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/zhouchentao666/SugarPlayer/releases" target="_blank" rel="noopener">⬇ GitHub 下载</a>
+        <a class="btn btn-ghost" href="https://wwazq.lanzoub.com/b00oe00xsb" target="_blank" rel="noopener">☁ 蓝奏云下载(密码:1234)</a>
+      </div>
+      <p class="version-note">GitHub Releases：安装版 / 便捷版　·　蓝奏云密码 <b>1234</b></p>
+    </section>
+
+    <!-- Features -->
+    <section class="block wrap" id="features">
+      <div class="section-head">
+        <div class="eyebrow">Features</div>
+        <h2>为音乐而生</h2>
+        <p>从本地曲库到全网音源，一个播放器全部搞定。</p>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <div class="ico">🎧</div>
+          <h3>本地音乐管理</h3>
+          <p>自动扫描本地文件夹，整理专辑、歌手与封面，支持编辑歌曲信息。</p>
+        </div>
+        <div class="feature">
+          <div class="ico">🌐</div>
+          <h3>在线音乐搜索</h3>
+          <p>聚合多平台音源，单曲 / 歌单 / 专辑一键搜索，畅听全网好歌。</p>
+        </div>
+        <div class="feature">
+          <div class="ico">📝</div>
+          <h3>歌词与桌面歌词</h3>
+          <p>精准滚动歌词，独立桌面歌词窗口，沉浸式跟唱体验。</p>
+        </div>
+        <div class="feature">
+          <div class="ico">📌</div>
+          <h3>歌单固定</h3>
+          <p>喜欢的在线歌单可固定到侧边栏，随时回放，无需重复搜索。</p>
+        </div>
+        <div class="feature">
+          <div class="ico">🎨</div>
+          <h3>毛玻璃界面</h3>
+          <p>现代亚克力质感与流畅动画，支持浅色 / 深色与窗口特效。</p>
+        </div>
+        <div class="feature">
+          <div class="ico">⚡</div>
+          <h3>轻量高效</h3>
+          <p>基于 Wails3 原生内核，资源占用低，启动迅速，体验顺滑。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screenshots -->
+    <section class="block wrap" id="screenshots">
+      <div class="section-head">
+        <div class="eyebrow">Gallery</div>
+        <h2>界面一览</h2>
+        <p>简洁而不简单的设计，每一帧都为你而调。</p>
+      </div>
+      <div class="shots">
+        <div class="shot"><img src="assets/截图1.png" alt="界面截图 1" /></div>
+        <div class="shot"><img src="assets/截图2.png" alt="界面截图 2" /></div>
+        <div class="shot"><img src="assets/截图3.png" alt="界面截图 3" /></div>
+        <div class="shot"><img src="assets/截图4.png" alt="界面截图 4" /></div>
+        <div class="shot"><img src="assets/截图5.png" alt="界面截图 5" /></div>
+      </div>
+    </section>
+
+    <!-- Channel & Video -->
+    <section class="block wrap" id="channel">
+      <div class="section-head">
+        <div class="eyebrow">Community</div>
+        <h2>加入我们</h2>
+        <p>关注频道获取更新动态，观看视频了解玩法。</p>
+      </div>
+      <div class="split">
+        <div class="panel">
+          <h3>📡 腾讯频道</h3>
+          <p>点击链接加入腾讯频道【SugarPlayer】，第一时间获取版本更新、使用技巧与开发动态，和我们一起把播放器做得更好。</p>
+          <a class="channel-link" href="https://pd.qq.com/s/yr6zo0yh" target="_blank" rel="noopener">加入腾讯频道 →</a>
+        </div>
+        <div class="panel">
+          <h3>🎬 介绍视频</h3>
+          <p>一分钟快速了解 SugarPlayer 的核心功能与界面。</p>
+          <div class="video-wrap" style="margin-top:16px;">
+            <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=116872854968034&bvid=BV17vT96eEj2&cid=39705185451&p=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Donate -->
+    <section class="block wrap" id="donate">
+      <div class="section-head">
+        <div class="eyebrow">Support</div>
+        <h2>请作者喝杯奶茶</h2>
+        <p>如果 SugarPlayer 对你有帮助，欢迎扫码支持，你的鼓励是持续更新的动力。</p>
+      </div>
+      <div class="donate">
+        <div class="donate-card">
+          <img src="assets/微信.jpg" alt="微信收款码" />
+          <p>微信</p>
+        </div>
+        <div class="donate-card">
+          <img src="assets/支付宝.jpg" alt="支付宝收款码" />
+          <p>支付宝</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="links">
+        <a href="https://github.com/zhouchentao666/SugarPlayer/releases" target="_blank" rel="noopener">GitHub 下载</a>
+        <a href="https://wwazq.lanzoub.com/b00odsy2kd" target="_blank" rel="noopener">蓝奏云（密码 1234）</a>
+        <a href="https://pd.qq.com/s/yr6zo0yh" target="_blank" rel="noopener">腾讯频道</a>
+      </div>
+      <div>© 2026 SugarPlayer · 用 💜 与代码打造</div>
+    </div>
+  </footer>
+</body>
+</html>
