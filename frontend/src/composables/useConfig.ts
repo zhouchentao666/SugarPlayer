@@ -1,5 +1,6 @@
 import { ref, watch, type Ref } from 'vue'
 import { SaveConfig, LoadConfig } from '../../bindings/sugarplayer/app'
+import type { OnlineCollection } from '../../bindings/sugarplayer/models'
 import { type Playlist } from '../types'
 import type { SortMode, SortOrder } from './usePlaylistView'
 import type { LocalSongMetadata } from './useLocalMetadata'
@@ -106,6 +107,9 @@ export interface AppSettings {
   selectedPlaylistId: string
   playlistSorts: Record<string, PlaylistSort>
   localMetadata: Record<string, LocalSongMetadata>
+  platformCookies: Record<string, string>
+  autoSwitchInvalidSource: boolean
+  pinnedOnlinePlaylists: OnlineCollection[]
 }
 
 export interface ConfigPlayback {
@@ -204,6 +208,9 @@ export function useConfig(
           selectedPlaylistId: config.settings.selectedPlaylistId ?? '',
           playlistSorts: (config.settings.playlistSorts as Record<string, PlaylistSort>) ?? {},
           localMetadata: (config.settings.localMetadata as Record<string, LocalSongMetadata>) ?? {},
+          platformCookies: ((config.settings as unknown as Record<string, unknown>).platformCookies as Record<string, string>) ?? {},
+          autoSwitchInvalidSource: ((config.settings as unknown as Record<string, unknown>).autoSwitchInvalidSource as boolean) ?? true,
+          pinnedOnlinePlaylists: ((config.settings as unknown as Record<string, unknown>).pinnedOnlinePlaylists as OnlineCollection[]) ?? [],
         }
       }
       if (config.playback) {

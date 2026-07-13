@@ -22,6 +22,7 @@ type ConfigSong struct {
 	ID       string        `json:"id"`
 	Path     string        `json:"path"`
 	Title    string        `json:"title"`
+	Cover    string        `json:"cover,omitempty"`
 	Metadata *SongMetadata `json:"metadata,omitempty"`
 }
 
@@ -98,6 +99,22 @@ type ConfigSettings struct {
 	SelectedPlaylistID   string                         `json:"selectedPlaylistId"`
 	PlaylistSorts        map[string]ConfigPlaylistSort  `json:"playlistSorts"`
 	LocalMetadata        map[string]ConfigLocalMetadata `json:"localMetadata"`
+	PlatformCookies      map[string]string              `json:"platformCookies"`
+	AutoSwitchInvalidSource bool                        `json:"autoSwitchInvalidSource"`
+	PinnedOnlinePlaylists []ConfigOnlineCollection      `json:"pinnedOnlinePlaylists"`
+}
+
+// ConfigOnlineCollection is a pinned online playlist/album persisted to config.
+type ConfigOnlineCollection struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Cover      string `json:"cover"`
+	Source     string `json:"source"`
+	Link       string `json:"link"`
+	Kind       string `json:"kind"`
+	Creator    string `json:"creator"`
+	TrackCount int    `json:"trackCount"`
+	Extra      string `json:"extra"`
 }
 
 // ConfigPlayback represents the last playback state.

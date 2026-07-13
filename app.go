@@ -26,6 +26,7 @@ type App struct {
 	closeToTray            bool
 	desktopLyricWindow     application.Window
 	desktopLyricWindowMu   sync.Mutex
+	downloadUnlocked       bool
 }
 
 // NewApp creates a new App application struct
@@ -39,6 +40,7 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 	a.audio = newAudioServer()
 	a.watcher = newFolderWatcher(a.app)
 	a.trayIcon = trayIconBytes
+	a.loadDownloadUnlock()
 
 	if win, ok := a.app.Window.GetByName("main"); ok {
 		a.mainWindow = win

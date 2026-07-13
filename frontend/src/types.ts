@@ -14,6 +14,7 @@ export interface Song {
   id: string
   path: string
   title: string
+  cover?: string
   metadata?: SongMetadata
 }
 

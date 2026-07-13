@@ -106,9 +106,9 @@ function formatDuration(seconds: number): string {
   display: flex;
   flex-direction: column;
   color: var(--fluent-text);
-  background: var(--fluent-bg-glass);
+  background: var(--fluent-bg-player);
   border-top: 1px solid var(--fluent-border);
-  backdrop-filter: blur(20px);
+  backdrop-filter: none;
   user-select: none;
   transition: color 500ms ease, background-color 500ms ease, border-color 500ms ease;
 }

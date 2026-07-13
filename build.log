@@ -1,0 +1,219 @@
+"uname": executable file not found in $PATH
+"uname": executable file not found in $PATH
+task: [windows:common:go:mod:tidy] go mod tidy
+task: Task "windows:common:generate:icons" is up to date
+task: [windows:common:generate:bindings] wails3 generate bindings -f '-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui"' -clean=true -i
+task: [windows:common:install:frontend:deps:npm] npm install
+task: [windows:common:frontend:run:npm] npm run build -q
+warnings when minifying css:
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1554:2:
+      1554 │   &.dom {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1603:2:
+      1603 │   &.FmKaba_dirty {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1608:2:
+      1608 │   &:has( > *):hover {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1612:2:
+      1612 │   &:has( > *):active {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1627:2:
+      1627 │   & span {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1633:2:
+      1633 │   & .FmKaba_romanWord {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1640:2:
+      1640 │   & .FmKaba_rubyWord {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1648:2:
+      1648 │   & .FmKaba_wordWithRuby {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1655:2:
+      1655 │   & .FmKaba_wordBody {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1661:2:
+      1661 │   & > span, & span.FmKaba_emphasizeWrapper {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1661:12:
+      1661 │   & > span, & span.FmKaba_emphasizeWrapper {
+           ╵             ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1669:4:
+      1669 │     &.FmKaba_emphasize, & span.FmKaba_emphasize {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1669:24:
+      1669 │     &.FmKaba_emphasize, & span.FmKaba_emphasize {
+           ╵                         ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1674:6:
+      1674 │       & > span {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1691:2:
+      1691 │   & .FmKaba_lyricMainLine {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1695:2:
+      1695 │   &.FmKaba_active {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1718:2:
+      1718 │   &:empty {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1774:2:
+      1774 │   &.FmKaba_enabled {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1778:2:
+      1778 │   & > * {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1788:2:
+      1788 │   &.FmKaba_duet {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1809:2:
+      1809 │   &:hover .FmKaba_lyricLine, &:hover .FmKaba_lyricLineWrapper {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1809:29:
+      1809 │   &:hover .FmKaba_lyricLine, &:hover .FmKaba_lyricLineWrapper {
+           ╵                              ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1813:2:
+      1813 │   &.FmKaba_hasDuetLine {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1814:4:
+      1814 │     & .FmKaba_lyricLine:not(.FmKaba_lyricDuetLine) {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1818:4:
+      1818 │     & .FmKaba_lyricDuetLine {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1822:4:
+      1822 │     & .FmKaba_lyricLineWrapper:has(.FmKaba_lyricDuetLine) {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1825:6:
+      1825 │       & .FmKaba_bgWrapper {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1829:6:
+      1829 │       & .FmKaba_bgWrapperTop {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:1835:2:
+      1835 │   &:not(.FmKaba_playing) .FmKaba_bgWrapper {
+           ╵   ^
+
+
+
+(!) Some chunks are larger than 500 KiB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/guide/en/#outputmanualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+task: [windows:generate:syso] wails3 generate syso -arch amd64 -icon windows/icon.ico -manifest windows/wails.exe.manifest -info windows/info.json -out ../wails_windows_amd64.syso
+task: [windows:build:native] go build -tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui" -o "bin/sugarplayer.exe"
+task: [windows:build:native] powershell Remove-item *.syso

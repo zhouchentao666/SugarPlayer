@@ -15,6 +15,7 @@ import (
 // AudioServer serves local audio files over HTTP so the WebView can stream them.
 type AudioServer struct {
 	server *http.Server
+	mux    *http.ServeMux
 	port   int
 }
 
@@ -32,6 +33,7 @@ func (s *AudioServer) start() {
 	s.port = listener.Addr().(*net.TCPAddr).Port
 
 	mux := http.NewServeMux()
+	s.mux = mux
 	mux.HandleFunc("/audio", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Query().Get("path")
 		if path == "" || !isAudioFile(path) {
@@ -48,6 +50,8 @@ func (s *AudioServer) start() {
 	})
 
 	s.server = &http.Server{Handler: mux}
+	s.registerOnlineProxy()
+	s.registerCoverProxy()
 	go func() {
 		_ = s.server.Serve(listener)
 	}()

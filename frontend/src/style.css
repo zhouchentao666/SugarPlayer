@@ -3,8 +3,9 @@
     --fluent-text: rgba(255, 255, 255, 0.95);
     --fluent-text-secondary: rgba(255, 255, 255, 0.6);
     --fluent-bg-glass: rgba(255, 255, 255, 0.08);
-    --fluent-bg-titlebar: rgba(255, 255, 255, 0.06);
-    --fluent-bg-sidebar: rgba(255, 255, 255, 0.06);
+    --fluent-bg-titlebar: rgba(0, 0, 0, 0);
+    --fluent-bg-sidebar: rgba(0, 0, 0, 0);
+    --fluent-bg-player: rgba(0, 0, 0, 0);
     --fluent-bg-card: rgba(255, 255, 255, 0.08);
     --fluent-bg-hover: rgba(255, 255, 255, 0.1);
     --fluent-bg-active: rgba(255, 255, 255, 0.16);
@@ -19,8 +20,9 @@
     --fluent-text: rgba(0, 0, 0, 0.85);
     --fluent-text-secondary: rgba(0, 0, 0, 0.6);
     --fluent-bg-glass: rgba(255, 255, 255, 0.45);
-    --fluent-bg-titlebar: rgba(255, 255, 255, 0.4);
-    --fluent-bg-sidebar: rgba(255, 255, 255, 0.5);
+    --fluent-bg-titlebar: rgba(0, 0, 0, 0);
+    --fluent-bg-sidebar: rgba(0, 0, 0, 0);
+    --fluent-bg-player: rgba(0, 0, 0, 0);
     --fluent-bg-card: rgba(255, 255, 255, 0.6);
     --fluent-bg-hover: rgba(0, 0, 0, 0.06);
     --fluent-bg-active: rgba(0, 0, 0, 0.1);
@@ -35,8 +37,9 @@
         --fluent-text: rgba(0, 0, 0, 0.85);
         --fluent-text-secondary: rgba(0, 0, 0, 0.6);
         --fluent-bg-glass: rgba(255, 255, 255, 0.45);
-        --fluent-bg-titlebar: rgba(255, 255, 255, 0.4);
-        --fluent-bg-sidebar: rgba(255, 255, 255, 0.5);
+        --fluent-bg-titlebar: rgba(0, 0, 0, 0);
+        --fluent-bg-sidebar: rgba(0, 0, 0, 0);
+        --fluent-bg-player: rgba(0, 0, 0, 0);
         --fluent-bg-card: rgba(255, 255, 255, 0.6);
         --fluent-bg-hover: rgba(0, 0, 0, 0.06);
         --fluent-bg-active: rgba(0, 0, 0, 0.1);

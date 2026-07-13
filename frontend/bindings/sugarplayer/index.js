@@ -25,6 +25,11 @@ import * as $models from "./models.js";
  */
 
 /**
+ * ConfigOnlineCollection is a pinned online playlist/album persisted to config.
+ * @typedef {$models.ConfigOnlineCollection} ConfigOnlineCollection
+ */
+
+/**
  * ConfigPlayback represents the last playback state.
  * @typedef {$models.ConfigPlayback} ConfigPlayback
  */
@@ -52,6 +57,33 @@ import * as $models from "./models.js";
 /**
  * ConfigWindow represents the last window bounds.
  * @typedef {$models.ConfigWindow} ConfigWindow
+ */
+
+/**
+ * OnlineCollection is a playlist or album returned by the online music sources.
+ * It is the unit that can be searched, recommended, listed as "my playlists",
+ * opened to show its songs, and pinned to the sidebar.
+ * @typedef {$models.OnlineCollection} OnlineCollection
+ */
+
+/**
+ * OnlineDownloadOpts controls what gets downloaded for an online song.
+ * @typedef {$models.OnlineDownloadOpts} OnlineDownloadOpts
+ */
+
+/**
+ * OnlineDownloadResult reports where the downloaded files were written.
+ * @typedef {$models.OnlineDownloadResult} OnlineDownloadResult
+ */
+
+/**
+ * OnlineSong is the search result returned to the frontend.
+ * @typedef {$models.OnlineSong} OnlineSong
+ */
+
+/**
+ * OnlineSource describes a single music source for the UI.
+ * @typedef {$models.OnlineSource} OnlineSource
  */
 
 /**

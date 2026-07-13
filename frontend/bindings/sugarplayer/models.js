@@ -48,6 +48,20 @@
  */
 
 /**
+ * ConfigOnlineCollection is a pinned online playlist/album persisted to config.
+ * @typedef {Object} ConfigOnlineCollection
+ * @property {string} id
+ * @property {string} name
+ * @property {string} cover
+ * @property {string} source
+ * @property {string} link
+ * @property {string} kind
+ * @property {string} creator
+ * @property {number} trackCount
+ * @property {string} extra
+ */
+
+/**
  * ConfigPlayback represents the last playback state.
  * @typedef {Object} ConfigPlayback
  * @property {string} playlistId
@@ -97,6 +111,9 @@
  * @property {string} selectedPlaylistId
  * @property {{ [_ in string]?: ConfigPlaylistSort } | null} playlistSorts
  * @property {{ [_ in string]?: ConfigLocalMetadata } | null} localMetadata
+ * @property {{ [_ in string]?: string } | null} platformCookies
+ * @property {boolean} autoSwitchInvalidSource
+ * @property {ConfigOnlineCollection[] | null} pinnedOnlinePlaylists
  */
 
 /**
@@ -105,6 +122,7 @@
  * @property {string} id
  * @property {string} path
  * @property {string} title
+ * @property {string} [cover]
  * @property {SongMetadata | null} [metadata]
  */
 
@@ -115,6 +133,63 @@
  * @property {number} y
  * @property {number} width
  * @property {number} height
+ */
+
+/**
+ * OnlineCollection is a playlist or album returned by the online music sources.
+ * It is the unit that can be searched, recommended, listed as "my playlists",
+ * opened to show its songs, and pinned to the sidebar.
+ * @typedef {Object} OnlineCollection
+ * @property {string} id
+ * @property {string} name
+ * @property {string} cover
+ * @property {string} source
+ * @property {string} link
+ * @property {string} kind - "playlist" | "album"
+ * @property {string} creator
+ * @property {number} trackCount
+ * @property {string} extra
+ */
+
+/**
+ * OnlineDownloadOpts controls what gets downloaded for an online song.
+ * @typedef {Object} OnlineDownloadOpts
+ * @property {string} dir
+ * @property {boolean} withLyrics
+ * @property {boolean} withCover
+ * @property {boolean} embed
+ */
+
+/**
+ * OnlineDownloadResult reports where the downloaded files were written.
+ * @typedef {Object} OnlineDownloadResult
+ * @property {string} path
+ * @property {string} lyricPath
+ * @property {string} coverPath
+ * @property {string} warning
+ */
+
+/**
+ * OnlineSong is the search result returned to the frontend.
+ * @typedef {Object} OnlineSong
+ * @property {string} id
+ * @property {string} name
+ * @property {string} artist
+ * @property {string} album
+ * @property {string} cover
+ * @property {number} duration
+ * @property {string} source
+ * @property {string} extra
+ * @property {string} link
+ * @property {string} streamUrl
+ */
+
+/**
+ * OnlineSource describes a single music source for the UI.
+ * @typedef {Object} OnlineSource
+ * @property {string} id
+ * @property {string} name
+ * @property {boolean} enabled
  */
 
 /**

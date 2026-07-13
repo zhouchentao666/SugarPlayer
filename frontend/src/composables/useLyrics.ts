@@ -1,15 +1,18 @@
 import { ref, watch, type Ref } from 'vue'
 import type { LyricLine } from '@applemusic-like-lyrics/core'
 import { parseLrc, parseLrcA2, parseYrc, parseQrc, parseEslrc, parseTTML } from '@applemusic-like-lyrics/lyric'
-import { ReadLyrics } from '../../bindings/sugarplayer/app'
+import { ReadLyrics, OnlineLyric } from '../../bindings/sugarplayer/app'
 import {
   convertLrcFormat,
   isA2Format,
+  isBracketA2Format,
+  convertBracketA2,
   isEnhancedLrc,
   isYrcFormat,
   sanitizeLyricLines,
 } from '../utils/lyricConverter'
 import { localMetadata } from './useLocalMetadata'
+import { currentOnlineSong } from './onlineState'
 
 export type { LyricLine }
 
@@ -77,6 +80,8 @@ function parseLyric(lrc: string, format?: string): LyricLine[] {
     parsed = parseLrcA2(convertLrcFormat(lrc)) as LyricLine[]
   } else if (isA2Format(lrc)) {
     parsed = parseLrcA2(normalizeLrcA2(lrc)) as LyricLine[]
+  } else if (isBracketA2Format(lrc)) {
+    parsed = parseLrcA2(normalizeLrcA2(convertBracketA2(lrc))) as LyricLine[]
   } else {
     parsed = parseLrc(lrc) as LyricLine[]
   }
@@ -92,6 +97,27 @@ export function useLyrics(currentSong: Ref<{ path: string } | null>) {
     if (!path) {
       lyrics.value = []
       hasLyrics.value = false
+      return
+    }
+
+    // Online songs are streamed by URL (or stored with the online:// scheme for
+    // favorited songs); resolve lyrics through the music source.
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('online://')) {
+      const song = currentOnlineSong.value
+      if (!song) {
+        lyrics.value = []
+        hasLyrics.value = false
+        return
+      }
+      const lrc = await OnlineLyric(song).catch(() => '')
+      if (!lrc) {
+        lyrics.value = []
+        hasLyrics.value = false
+        return
+      }
+      const parsed = parseLyric(lrc)
+      lyrics.value = parsed
+      hasLyrics.value = parsed.length > 0
       return
     }
 

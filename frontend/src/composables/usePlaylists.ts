@@ -129,7 +129,7 @@ export function usePlaylists() {
     for (const song of songs) {
       if (!seen.has(song.path)) {
         seen.add(song.path)
-        merged.push({ ...song, id: crypto.randomUUID() })
+        merged.push({ ...song, id: song.id || crypto.randomUUID() })
       }
     }
     updatePlaylist({ ...playlist, songs: merged })

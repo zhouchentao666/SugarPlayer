@@ -102,6 +102,40 @@ export function isA2Format(lrc: string): boolean {
   return /^\[\d{2}:\d{2}(?:\.\d+)?\].*<\d{2}:\d{2}(?:\.\d+)?>/m.test(lrc)
 }
 
+// LRC A2 的变体：逐字时间戳使用方括号而非尖括号，例如
+//   [00:00.00] [00:00.04] When [00:00.16] the [00:00.82] truth
+// 每个方括号表示其后续文本片段（一个词）的开始时间。
+export function isBracketA2Format(lrc: string): boolean {
+  // 逐字时间戳的典型结构是同一行内「[时间] 单词 [时间] 单词…」，即一个
+  // [mm:ss.xx] 之后紧跟真实单词字符、再紧跟另一个 [mm:ss.xx]。
+  // 必须逐行、且用 [^\n] 限定，否则 \s* 会跨行把「上一行歌词 + 换行 +
+  // 下一行行首时间戳」连起来误判成逐字结构，导致普通 LRC 被错判。
+  const inlinePair =
+    /\[\d{2}:\d{2}(?:\.\d+)?\][^\n]*[^\s\[\]]+[^\n]*\[\d{2}:\d{2}(?:\.\d+)?\]/
+  return lrc.split('\n').some((line) => inlinePair.test(line))
+}
+
+// 将中括号版 A2 转换为 AMLL 支持的尖括号 A2：保留行首第一个 [mm:ss.xx]
+// 作为行时间戳，其余 [mm:ss.xx] 逐字时间戳改写为 <mm:ss.xx>。
+export function convertBracketA2(lrc: string): string {
+  if (!lrc) return ''
+  return lrc
+    .split('\n')
+    .map((line) => {
+      const headMatch = line.match(/^\[\d{2}:\d{2}(?:\.\d+)?\]/)
+      if (!headMatch) return line
+      const headEnd = headMatch.index! + headMatch[0].length
+      const head = line.slice(0, headEnd)
+      const tail = line.slice(headEnd)
+      const convertedTail = tail.replace(
+        /\[\d{2}:\d{2}(?:\.\d+)?\]/g,
+        (t) => `<${t.slice(1, -1)}>`,
+      )
+      return head + convertedTail
+    })
+    .join('\n')
+}
+
 export function convertLrcFormat(lrcContent: string): string {
   if (!lrcContent) return ''
   const lines = lrcContent.split('\n')

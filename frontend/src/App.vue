@@ -12,10 +12,13 @@ import {
   ShowMainWindow,
   CloseDesktopLyric,
   SetDesktopLyricIgnoreMouseEvents,
+  SetPlatformCookies,
+  SwitchSongSource,
 } from '../bindings/sugarplayer/app'
 import TitleBar from './components/TitleBar.vue'
 import Sidebar from './components/Sidebar.vue'
 import Settings from './components/Settings.vue'
+import OnlineSettings from './components/OnlineSettings.vue'
 import PlaylistView from './components/PlaylistView.vue'
 import PlayerFooter from './components/PlayerFooter.vue'
 import PlayerDetail from './components/player/PlayerDetail.vue'
@@ -31,18 +34,25 @@ import { useDesktopLyricBridge } from './composables/useDesktopLyricBridge'
 import { useDesktopLyric } from './composables/useDesktopLyric'
 import DesktopLyricApp from './DesktopLyricApp.vue'
 import PlayQueue from './components/player/PlayQueue.vue'
+import OnlineView from './components/OnlineView.vue'
 import type { PlayMode } from './components/player/PlayerControls.vue'
 import type { Song } from './types'
+import type { OnlineSong, OnlineCollection } from '../bindings/sugarplayer/models'
 import type { SortMode, SortOrder } from './composables/usePlaylistView'
 import { localMetadata, type LocalSongMetadata } from './composables/useLocalMetadata'
 
-const view = ref<'main' | 'settings'>('main')
+const view = ref<'main' | 'settings' | 'online' | 'onlinesettings'>('main')
+// 从侧栏点击固定歌单时，临时持有要打开的歌单，传给 OnlineView
+const pendingCollection = ref<OnlineCollection | null>(null)
 const isLoading = ref(true)
 const audioRef = ref<HTMLAudioElement | null>(null)
 const showPlayerDetail = ref(false)
 const showQueue = ref(false)
 const playMode = ref<PlayMode>('sequential')
 const updateInfo = ref<UpdateInfo | null>(null)
+// 手动检查更新的内联状态（在「本地设置」中显示）：
+// idle 未检查 / checking 检查中 / latest 已是最新 / error 检查失败
+const updateState = ref<'idle' | 'checking' | 'latest' | 'error'>('idle')
 const settings = ref<AppSettings>({
   theme: 'system',
   accentColor: '#0078d4',
@@ -68,6 +78,9 @@ const settings = ref<AppSettings>({
   selectedPlaylistId: '',
   playlistSorts: {},
   localMetadata: {},
+  platformCookies: {},
+  autoSwitchInvalidSource: true,
+  pinnedOnlinePlaylists: [],
 })
 
 const playbackState = ref<ConfigPlayback>({
@@ -92,6 +105,7 @@ const { save, load } = useConfig(playlists, settings, playbackState, windowState
 const audio = useAudioPlayer({
   audioRef,
   onEnded: playNext,
+  onOnlinePlayError: handleOnlinePlayError,
 })
 
 const lyrics = useLyrics(audio.currentSong)
@@ -130,6 +144,10 @@ function pickRandomIndex(current: number, count: number): number {
 }
 
 function playNext() {
+  if (audio.playlistId.value === 'online') {
+    playOnlineNeighbor(1)
+    return
+  }
   if (!audio.playlistId.value) return
   const playlist = playlists.value.find(p => p.id === audio.playlistId.value)
   if (!playlist || playlist.songs.length === 0) return
@@ -154,6 +172,10 @@ function playNext() {
 }
 
 function playPrev() {
+  if (audio.playlistId.value === 'online') {
+    playOnlineNeighbor(-1)
+    return
+  }
   if (!audio.playlistId.value) return
   const playlist = playlists.value.find(p => p.id === audio.playlistId.value)
   if (!playlist || playlist.songs.length === 0) return
@@ -173,6 +195,90 @@ function playPrev() {
     if (prevIndex < 0) prevIndex = count - 1
   }
   playSong(audio.playlistId.value, prevIndex)
+}
+
+function playOnlineNeighbor(delta: number) {
+  const list = audio.onlineList.value
+  if (!list.length) return
+  const count = list.length
+  let next = audio.onlineIndex.value + delta
+  if (next < 0) next = count - 1
+  if (next >= count) next = 0
+  audio.playOnline(list[next], list, next)
+}
+
+function playOnlineSong(list: OnlineSong[], index: number) {
+  audio.playOnline(list[index], list, index)
+}
+
+// When an online song fails to play and the auto-switch option is enabled,
+// try to find a playable source for it and replay from there.
+let switchingSource = false
+async function handleOnlinePlayError(song: OnlineSong) {
+  if (!settings.value.autoSwitchInvalidSource || switchingSource) return
+  switchingSource = true
+  try {
+    const alt = await SwitchSongSource(song)
+    if (alt.source !== song.source || alt.id !== song.id) {
+      const list = audio.onlineList.value
+      const idx = audio.onlineIndex.value
+      if (idx >= 0 && idx < list.length) {
+        list[idx] = alt
+        audio.playOnline(alt, list, idx)
+      }
+    }
+  } catch {
+    // 换源失败，保持原状态
+  } finally {
+    switchingSource = false
+  }
+}
+
+function onlineSongToLocal(song: OnlineSong): Song {
+  const extra = song.extra ? `?extra=${encodeURIComponent(song.extra)}` : ''
+  return {
+    id: `online:${song.source}:${song.id}`,
+    path: `online://${song.source}/${encodeURIComponent(song.id)}${extra}`,
+    title: song.name,
+    cover: realCoverURL(song.cover),
+    metadata: {
+      title: song.name,
+      artist: song.artist,
+      album: song.album,
+      genre: '',
+      year: '',
+      duration: song.duration,
+      bitrate: 0,
+    },
+  }
+}
+
+// Unwrap the local /cover proxy URL back to the original remote cover URL so
+// favorited covers keep working across app restarts (the proxy port is random).
+function realCoverURL(url: string): string {
+  if (url && url.includes('/cover?url=')) {
+    try {
+      const u = new URL(url)
+      const r = u.searchParams.get('url')
+      if (r) return r
+    } catch {
+      // ignore, fall back to original
+    }
+  }
+  return url
+}
+
+// Add an online song to the local "我的喜欢" playlist so it can be played later
+// (stored with the online:// scheme, resolved to a stream at play time).
+function favoriteOnlineSong(song: OnlineSong) {
+  const local = onlineSongToLocal(song)
+  if (!playlists.value.some(p => p.id === 'favorites')) {
+    playlists.value = [
+      ...playlists.value,
+      { id: 'favorites', name: '我的喜欢', songs: [], folders: [] },
+    ]
+  }
+  addSongs('favorites', [local])
 }
 
 function playSong(playlistId: string, index: number, autoPlay = true) {
@@ -196,6 +302,35 @@ function handleTogglePlay() {
 
 function updateSettings(newSettings: AppSettings) {
   settings.value = { ...newSettings }
+}
+
+// 从侧栏打开固定的在线歌单 / 专辑
+function openOnlineCollection(col: OnlineCollection) {
+  pendingCollection.value = col
+  view.value = 'online'
+  // 让 OnlineView 消费后清空，避免下次进入在线页重复打开
+  setTimeout(() => {
+    pendingCollection.value = null
+  }, 0)
+}
+
+function togglePinCollection(col: OnlineCollection) {
+  const list = settings.value.pinnedOnlinePlaylists || []
+  const exists = list.some(
+    p => p.source === col.source && p.id === col.id && p.kind === col.kind
+  )
+  const next = exists
+    ? list.filter(p => !(p.source === col.source && p.id === col.id && p.kind === col.kind))
+    : [...list, col]
+  updateSettings({ ...settings.value, pinnedOnlinePlaylists: next })
+}
+
+function unpinCollection(col: OnlineCollection) {
+  const list = settings.value.pinnedOnlinePlaylists || []
+  const next = list.filter(
+    p => !(p.source === col.source && p.id === col.id && p.kind === col.kind)
+  )
+  updateSettings({ ...settings.value, pinnedOnlinePlaylists: next })
 }
 const { handleClose, restoreSession } = useSession(settings, playbackState, windowState, save, playlists, audio, selectPlaylist)
 
@@ -343,19 +478,19 @@ async function performUpdateCheck() {
 }
 
 async function manualUpdateCheck() {
+  updateState.value = 'checking'
   try {
     const info = await CheckUpdate()
-    updateInfo.value = info
-  } catch {
-    updateInfo.value = {
-      currentVersion: '',
-      latestVersion: '',
-      hasUpdate: false,
-      releaseUrl: '',
-      lanzouUrl: '',
-      lanzouPassword: '',
-      error: true,
+    if (info.hasUpdate) {
+      // 有新版本才弹窗提示
+      updateInfo.value = info
+      updateState.value = 'idle'
+    } else {
+      // 无新版本不弹窗，在设置中内联显示「已是最新版本」
+      updateState.value = 'latest'
     }
+  } catch {
+    updateState.value = 'error'
   }
 }
 
@@ -370,6 +505,12 @@ async function openUpdateUrl(url: string) {
 
 onMounted(async () => {
   await load()
+  // 把已保存的平台 Cookie 注入到 Go 端的 core CookieManager，使搜索/播放使用登录态
+  try {
+    await SetPlatformCookies(settings.value.platformCookies ?? {})
+  } catch {
+    // 忽略 Cookie 注入失败
+  }
   localMetadata.value = settings.value.localMetadata
   if (settings.value.selectedPlaylistId && playlists.value.some(p => p.id === settings.value.selectedPlaylistId)) {
     selectPlaylist(settings.value.selectedPlaylistId)
@@ -437,11 +578,16 @@ onUnmounted(() => {
         :playlists="playlists"
         :selected-id="selectedId"
         :active-view="view"
+        :pinned-collections="settings.pinnedOnlinePlaylists"
         @update:playlists="updatePlaylists"
         @update:selected-id="selectedId = $event"
         @open-settings="view = 'settings'"
+        @open-online="view = 'online'"
+        @open-online-settings="view = 'onlinesettings'"
         @select="onSelectPlaylist"
         @drop-songs="handleDropSongs"
+        @open-online-collection="openOnlineCollection"
+        @unpin-collection="unpinCollection"
       />
       <main class="main">
         <Transition name="view-flip">
@@ -460,13 +606,31 @@ onUnmounted(() => {
             @replace-to-playlist="replaceSongs"
             @update-sort="handleUpdateSort"
           />
+          <OnlineView
+            v-else-if="view === 'online'"
+            :current-song="audio.currentSong.value"
+            :auto-switch="settings.autoSwitchInvalidSource"
+            :pinned-collections="settings.pinnedOnlinePlaylists"
+            :open-collection="pendingCollection"
+            @play="playOnlineSong"
+            @favorite="favoriteOnlineSong"
+            @toggle-pin="togglePinCollection"
+          />
           <Settings
             v-else-if="view === 'settings'"
             :key="'settings'"
             :settings="settings"
+            :update-state="updateState"
             @update:settings="updateSettings"
             @close="view = 'main'"
             @check-update="manualUpdateCheck"
+          />
+          <OnlineSettings
+            v-else-if="view === 'onlinesettings'"
+            :key="'onlinesettings'"
+            :settings="settings"
+            @update:settings="updateSettings"
+            @close="view = 'main'"
           />
         </Transition>
       </main>

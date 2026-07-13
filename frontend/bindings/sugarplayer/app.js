@@ -13,6 +13,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as model$0 from "../github.com/guohuiyuan/music-lib/model/models.js";
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
 /**
@@ -33,6 +37,20 @@ export function AudioServerURL() {
 }
 
 /**
+ * CheckQRLogin polls the login status for a previously created QR session.
+ * On success it extracts the login cookie and injects it into the shared core
+ * cookie manager so subsequent searches / playback use the logged-in state; the
+ * resolved cookie and its target platform are also returned via the result so
+ * the frontend can persist it into config.json.
+ * @param {string} source
+ * @param {string} key
+ * @returns {$CancellablePromise<model$0.QRLoginResult>}
+ */
+export function CheckQRLogin(source, key) {
+    return $Call.ByID(904524293, source, key);
+}
+
+/**
  * CheckUpdate checks GitHub for a newer release. It tries the API first, then
  * the release page, then a mirror.
  * @returns {$CancellablePromise<$models.UpdateInfo>}
@@ -47,6 +65,18 @@ export function CheckUpdate() {
  */
 export function CloseDesktopLyric() {
     return $Call.ByID(2378771400);
+}
+
+/**
+ * CreateQRLogin creates a QR login session for the given platform. When the
+ * upstream session does not carry a ready-made image, a PNG data URL is
+ * generated locally from the QR content URL so the frontend can render it
+ * directly without any extra dependency.
+ * @param {string} source
+ * @returns {$CancellablePromise<model$0.QRLoginSession>}
+ */
+export function CreateQRLogin(source) {
+    return $Call.ByID(3244372127, source);
 }
 
 /**
@@ -75,6 +105,14 @@ export function GetDesktopLyricConfig() {
 }
 
 /**
+ * GetPlatformCookies returns the currently configured platform cookies.
+ * @returns {$CancellablePromise<{ [_ in string]?: string } | null>}
+ */
+export function GetPlatformCookies() {
+    return $Call.ByID(568707775);
+}
+
+/**
  * Greet returns a greeting for the given name
  * @param {string} name
  * @returns {$CancellablePromise<string>}
@@ -89,6 +127,104 @@ export function Greet(name) {
  */
 export function LoadConfig() {
     return $Call.ByID(2822453907);
+}
+
+/**
+ * OnlineCollectionSongs returns the songs contained in a playlist or album.
+ * @param {$models.OnlineCollection} col
+ * @returns {$CancellablePromise<$models.OnlineSong[] | null>}
+ */
+export function OnlineCollectionSongs(col) {
+    return $Call.ByID(1856589160, col);
+}
+
+/**
+ * OnlineDownload downloads an online song to disk according to the options.
+ * It requires the download feature to be unlocked via OnlineVerifyKey.
+ * @param {$models.OnlineSong} song
+ * @param {$models.OnlineDownloadOpts} opts
+ * @returns {$CancellablePromise<$models.OnlineDownloadResult | null>}
+ */
+export function OnlineDownload(song, opts) {
+    return $Call.ByID(440481330, song, opts);
+}
+
+/**
+ * OnlineIsUnlocked reports whether downloading has been unlocked.
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function OnlineIsUnlocked() {
+    return $Call.ByID(378115603);
+}
+
+/**
+ * OnlineLyric returns the LRC lyrics for an online song.
+ * @param {$models.OnlineSong} song
+ * @returns {$CancellablePromise<string>}
+ */
+export function OnlineLyric(song) {
+    return $Call.ByID(698690785, song);
+}
+
+/**
+ * OnlineRecommendPlaylists returns daily recommended playlists aggregated from
+ * the sources that support recommendations (netease / qq / kugou / kuwo).
+ * @param {string[] | null} sources
+ * @returns {$CancellablePromise<$models.OnlineCollection[] | null>}
+ */
+export function OnlineRecommendPlaylists(sources) {
+    return $Call.ByID(4056511663, sources);
+}
+
+/**
+ * OnlineSearch searches multiple music sources for the given keyword.
+ * @param {string} keyword
+ * @param {string[] | null} sources
+ * @returns {$CancellablePromise<$models.OnlineSong[] | null>}
+ */
+export function OnlineSearch(keyword, sources) {
+    return $Call.ByID(1442961098, keyword, sources);
+}
+
+/**
+ * OnlineSearchCollections searches playlists or albums (kind = "playlist" | "album")
+ * across the selected sources and returns a unified list of collections.
+ * @param {string} keyword
+ * @param {string} kind
+ * @param {string[] | null} sources
+ * @returns {$CancellablePromise<$models.OnlineCollection[] | null>}
+ */
+export function OnlineSearchCollections(keyword, kind, sources) {
+    return $Call.ByID(1391770123, keyword, kind, sources);
+}
+
+/**
+ * OnlineSources returns the available music sources with descriptions.
+ * @returns {$CancellablePromise<$models.OnlineSource[] | null>}
+ */
+export function OnlineSources() {
+    return $Call.ByID(1065601540);
+}
+
+/**
+ * OnlineUserPlaylists returns the logged-in user's playlists (created / collected
+ * / liked) from the sources that support it (netease / qq / kugou / soda). A valid
+ * platform cookie must be configured via the online settings for results to appear.
+ * @param {string[] | null} sources
+ * @returns {$CancellablePromise<$models.OnlineCollection[] | null>}
+ */
+export function OnlineUserPlaylists(sources) {
+    return $Call.ByID(2238323112, sources);
+}
+
+/**
+ * OnlineVerifyKey checks the download key. On success it unlocks downloading
+ * for the current and all future sessions.
+ * @param {string} key
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function OnlineVerifyKey(key) {
+    return $Call.ByID(3621322370, key);
 }
 
 /**
@@ -140,6 +276,15 @@ export function OpenSongEditor(path) {
  */
 export function OpenURL(u) {
     return $Call.ByID(3584934946, u);
+}
+
+/**
+ * QRLoginSources returns the music platforms that support QR-code login.
+ * This includes WeChat login for QQ Music via the special "qq_wx" source.
+ * @returns {$CancellablePromise<string[] | null>}
+ */
+export function QRLoginSources() {
+    return $Call.ByID(1844143715);
 }
 
 /**
@@ -236,6 +381,19 @@ export function SetDesktopLyricIgnoreMouseEvents(ignore) {
 }
 
 /**
+ * SetPlatformCookies stores music-platform login cookies (the go-music-dl
+ * "Cookies" feature) into the shared core cookie manager so that subsequent
+ * searches / downloads / playback use the logged-in state. Persistence is
+ * handled by the frontend via SaveConfig (config.json); this only updates the
+ * runtime cookie manager consumed by core.GetSearchFunc / GetDownloadFunc.
+ * @param {{ [_ in string]?: string } | null} cookies
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetPlatformCookies(cookies) {
+    return $Call.ByID(524459155, cookies);
+}
+
+/**
  * SetTraySongInfo updates the disabled "current song" label in the tray menu.
  * @param {string} label
  * @returns {$CancellablePromise<void>}
@@ -258,6 +416,19 @@ export function ShowMainWindow() {
  */
 export function StopWatching() {
     return $Call.ByID(3671977832);
+}
+
+/**
+ * SwitchSongSource tries to find a playable source for the given online song.
+ * If the current source is already playable it returns the song unchanged;
+ * otherwise it searches other sources for a matching song and returns the first
+ * playable alternative (or the original song if none is found). This backs the
+ * "自动选择无效音源并批量换源" feature.
+ * @param {$models.OnlineSong} song
+ * @returns {$CancellablePromise<$models.OnlineSong>}
+ */
+export function SwitchSongSource(song) {
+    return $Call.ByID(2778627285, song);
 }
 
 /**

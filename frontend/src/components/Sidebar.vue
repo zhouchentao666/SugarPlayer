@@ -1,22 +1,51 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { type Playlist } from '../types'
+import type { OnlineCollection } from '../../bindings/sugarplayer/models'
 import PlaylistItem from './sidebar/PlaylistItem.vue'
 import PlaylistCreateInput from './sidebar/PlaylistCreateInput.vue'
 
 const props = defineProps<{
   playlists: Playlist[]
   selectedId: string
-  activeView?: 'main' | 'settings'
+  activeView?: 'main' | 'settings' | 'online' | 'onlinesettings'
+  pinnedCollections: OnlineCollection[]
 }>()
 
 const emit = defineEmits<{
   (e: 'update:playlists', playlists: Playlist[]): void
   (e: 'update:selectedId', id: string): void
   (e: 'open-settings'): void
+  (e: 'open-online'): void
+  (e: 'open-online-settings'): void
   (e: 'select', id: string): void
   (e: 'drop-songs', payload: { targetPlaylistId: string; sourcePlaylistId: string; songIds: string[] }): void
+  (e: 'open-online-collection', collection: OnlineCollection): void
+  (e: 'unpin-collection', collection: OnlineCollection): void
 }>()
+
+const sourceName: Record<string, string> = {
+  netease: '网易云',
+  qq: 'QQ',
+  kugou: '酷狗',
+  kuwo: '酷我',
+  migu: '咪咕',
+  bilibili: 'B站',
+  soda: '汽水',
+  joox: 'Joox',
+  qianqian: '千千',
+  apple: 'Apple',
+  jamendo: 'Jamendo',
+  fivesing: '5sing',
+}
+
+function openCollection(col: OnlineCollection) {
+  emit('open-online-collection', col)
+}
+
+function unpin(col: OnlineCollection) {
+  emit('unpin-collection', col)
+}
 
 const isCreating = ref(false)
 
@@ -77,6 +106,21 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
 
 <template>
   <aside class="sidebar">
+    <div class="nav-section">
+      <button
+        :class="['nav-item', { active: activeView === 'online' }]"
+        @click="emit('open-online')"
+      >
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18" />
+            <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
+          </svg>
+        </span>
+        <span>在线音乐</span>
+      </button>
+    </div>
     <div class="section">
       <div class="section-title">歌单</div>
       <ul class="playlist-list">
@@ -101,13 +145,56 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
         <span>新建歌单</span>
       </button>
     </div>
+
+    <div v-if="pinnedCollections.length" class="section pinned-section">
+      <div class="section-title">在线歌单</div>
+      <ul class="playlist-list">
+        <li
+          v-for="col in pinnedCollections"
+          :key="col.source + ':' + col.kind + ':' + col.id"
+          class="pinned-item"
+          @click="openCollection(col)"
+        >
+          <span class="pinned-cover">
+            <img v-if="col.cover" :src="col.cover" alt="" loading="lazy" />
+            <span v-else class="pinned-cover-fallback">♪</span>
+          </span>
+          <span class="pinned-meta">
+            <span class="pinned-name">{{ col.name }}</span>
+            <span class="pinned-sub">{{ sourceName[col.source] || col.source }}{{ col.kind === 'album' ? ' · 专辑' : '' }}</span>
+          </span>
+          <button
+            class="pinned-unpin"
+            title="取消固定"
+            @click.stop="unpin(col)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </div>
     <div class="bottom">
+      <button
+        :class="['settings-btn', { active: activeView === 'onlinesettings' }]"
+        @click="emit('open-online-settings')"
+      >
+        <span class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21a8 8 0 0 1 16 0" />
+          </svg>
+        </span>
+        <span>在线设置</span>
+      </button>
       <button
         :class="['settings-btn', { active: activeView === 'settings' }]"
         @click="emit('open-settings')"
       >
         <span class="icon">⚙</span>
-        <span>设置</span>
+        <span>本地设置</span>
       </button>
     </div>
   </aside>
@@ -129,6 +216,47 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
   flex: 1;
   padding: 16px 12px;
   overflow-y: auto;
+}
+
+.nav-section {
+  padding: 12px 12px 4px;
+}
+
+.nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.nav-item:hover {
+  background: var(--fluent-bg-hover);
+}
+
+.nav-item.active {
+  background: var(--fluent-bg-active);
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+}
+
+.nav-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .section-title {
@@ -176,8 +304,112 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
 
 .create-btn .icon,
 .settings-btn .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 14px;
   opacity: 0.85;
+}
+
+.settings-btn .icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 在线歌单固定区 */
+.pinned-section {
+  flex: 0 0 auto;
+}
+
+.pinned-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.pinned-item:hover {
+  background: var(--fluent-bg-hover);
+}
+
+.pinned-cover {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--fluent-bg-active);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pinned-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pinned-cover-fallback {
+  font-size: 14px;
+  color: var(--fluent-text-secondary);
+}
+
+.pinned-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pinned-name {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinned-sub {
+  font-size: 11px;
+  color: var(--fluent-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinned-unpin {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
+  flex-shrink: 0;
+}
+
+.pinned-item:hover .pinned-unpin {
+  opacity: 1;
+}
+
+.pinned-unpin:hover {
+  background: var(--fluent-bg-active);
+  color: #ff8080;
+}
+
+.pinned-unpin svg {
+  width: 14px;
+  height: 14px;
 }
 
 .bottom {

@@ -1,11 +1,14 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, watch, type Ref } from 'vue'
-import { ReadCoverArt, AudioServerURL } from '../../bindings/sugarplayer/app'
+import { ReadCoverArt, AudioServerURL, OnlineLyric } from '../../bindings/sugarplayer/app'
 import { type Song } from '../types'
+import type { OnlineSong } from '../../bindings/sugarplayer/models'
 import { localMetadata } from './useLocalMetadata'
+import { currentOnlineSong } from './onlineState'
 
 interface AudioPlayerOptions {
   audioRef?: Ref<HTMLAudioElement | null>
   onEnded?: () => void
+  onOnlinePlayError?: (song: OnlineSong) => void
 }
 
 export function useAudioPlayer(options: AudioPlayerOptions = {}) {
@@ -22,9 +25,14 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
   const index = ref(-1)
   const serverUrl = ref<string>('')
 
+  // Online playback queue (songs searched from music sources).
+  const onlineList = ref<OnlineSong[]>([])
+  const onlineIndex = ref(-1)
+
   const hasSong = computed(() => currentSong.value !== null)
 
   async function loadCover(path: string) {
+    if (path.startsWith('http://') || path.startsWith('https://')) return
     const override = localMetadata.value[path]?.cover
     if (override) {
       coverUrl.value = override
@@ -49,6 +57,12 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
   }
 
   async function play(playlist: string, songIndex: number, song: Song, autoPlay = true) {
+    // Favorited online songs are stored with the online:// scheme so they keep
+    // working across app restarts (the streaming port is random per launch).
+    if (song.path.startsWith('online://')) {
+      playOnlineFavorited(song, playlist, songIndex, autoPlay)
+      return
+    }
     playlistId.value = playlist
     index.value = songIndex
     currentSong.value = song
@@ -73,12 +87,105 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     }
   }
 
+  // Play a favorited online song (path uses the online:// scheme) through the
+  // bottom bar, reconstructing the streaming URL from the local audio server.
+  async function playOnlineFavorited(song: Song, playlist: string, songIndex: number, autoPlay = true) {
+    const u = new URL(song.path)
+    const source = u.host
+    const id = decodeURIComponent(u.pathname.replace(/^\//, ''))
+    const extra = u.searchParams.get('extra') || ''
+    const onlineSong: OnlineSong = {
+      id,
+      source,
+      name: song.title,
+      artist: song.metadata?.artist || '',
+      album: song.metadata?.album || '',
+      cover: song.cover || '',
+      duration: song.metadata?.duration || 0,
+      extra,
+      link: '',
+      streamUrl: '',
+    }
+    currentOnlineSong.value = onlineSong
+    playlistId.value = playlist
+    index.value = songIndex
+    currentSong.value = song
+    currentTime.value = 0
+    duration.value = song.metadata?.duration || 0
+    coverUrl.value = song.cover || null
+    onlineList.value = []
+    onlineIndex.value = -1
+
+    await nextTick()
+    if (!audioRef.value) return
+    try {
+      const base = serverUrl.value || (await AudioServerURL())
+      serverUrl.value = base
+      const q = new URLSearchParams({ source, id })
+      if (extra) q.set('extra', extra)
+      audioRef.value.src = `${base}/online?${q.toString()}`
+      audioRef.value.load()
+      audioRef.value.playbackRate = playbackRate.value
+      if (autoPlay) {
+        await audioRef.value.play()
+        isPlaying.value = true
+      } else {
+        isPlaying.value = false
+      }
+    } catch {
+      isPlaying.value = false
+    }
+  }
+
   function togglePlay() {
     if (!currentSong.value || !audioRef.value) return
     if (isPlaying.value) {
       audioRef.value.pause()
     } else {
       audioRef.value.play().catch(() => {})
+    }
+  }
+
+  // Play an online song (searched from a music source) through the bottom bar.
+  async function playOnline(song: OnlineSong, list: OnlineSong[], songIndex: number, autoPlay = true) {
+    currentOnlineSong.value = song
+    const adapted: Song = {
+      id: `online:${song.source}:${song.id}`,
+      path: song.streamUrl,
+      title: song.name,
+      metadata: {
+        title: song.name,
+        artist: song.artist,
+        album: song.album,
+        genre: '',
+        year: '',
+        duration: song.duration,
+        bitrate: 0,
+      },
+    }
+    playlistId.value = 'online'
+    index.value = songIndex
+    currentSong.value = adapted
+    currentTime.value = 0
+    duration.value = song.duration || 0
+    coverUrl.value = song.cover || null
+    onlineList.value = list
+    onlineIndex.value = songIndex
+
+    await nextTick()
+    if (!audioRef.value) return
+    try {
+      audioRef.value.src = song.streamUrl
+      audioRef.value.load()
+      audioRef.value.playbackRate = playbackRate.value
+      if (autoPlay) {
+        await audioRef.value.play()
+        isPlaying.value = true
+      } else {
+        isPlaying.value = false
+      }
+    } catch {
+      isPlaying.value = false
     }
   }
 
@@ -118,6 +225,11 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     }
     audio.addEventListener('play', () => { isPlaying.value = true })
     audio.addEventListener('pause', () => { isPlaying.value = false })
+    audio.addEventListener('error', () => {
+      if (options.onOnlinePlayError && currentOnlineSong.value) {
+        options.onOnlinePlayError(currentOnlineSong.value)
+      }
+    })
   }
 
   onMounted(() => {
@@ -140,7 +252,10 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     playlistId,
     index,
     hasSong,
+    onlineList,
+    onlineIndex,
     play,
+    playOnline,
     togglePlay,
     pause,
     seek,

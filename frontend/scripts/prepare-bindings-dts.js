@@ -43,6 +43,22 @@ export function StopWatching(): CancellablePromise<void>;
 export function ToggleDesktopLyric(enabled: boolean): CancellablePromise<void>;
 export function WatchMusicFolder(path: string): CancellablePromise<void>;
 export function Version(): CancellablePromise<string>;
+export function OnlineSearch(keyword: string, sources: string[]): CancellablePromise<models.OnlineSong[]>;
+export function OnlineLyric(song: models.OnlineSong): CancellablePromise<string>;
+export function OnlineSources(): CancellablePromise<models.OnlineSource[]>;
+export function OnlineVerifyKey(key: string): CancellablePromise<boolean>;
+export function OnlineIsUnlocked(): CancellablePromise<boolean>;
+export function OnlineDownload(song: models.OnlineSong, opts: models.OnlineDownloadOpts): CancellablePromise<models.OnlineDownloadResult>;
+export function GetPlatformCookies(): CancellablePromise<Record<string, string>>;
+export function SetPlatformCookies(cookies: Record<string, string>): CancellablePromise<void>;
+export function SwitchSongSource(song: models.OnlineSong): CancellablePromise<models.OnlineSong>;
+export function QRLoginSources(): CancellablePromise<string[]>;
+export function CreateQRLogin(source: string): CancellablePromise<models.QRLoginSession>;
+export function CheckQRLogin(source: string, key: string): CancellablePromise<models.QRLoginResult>;
+export function OnlineRecommendPlaylists(sources: string[]): CancellablePromise<models.OnlineCollection[]>;
+export function OnlineUserPlaylists(sources: string[]): CancellablePromise<models.OnlineCollection[]>;
+export function OnlineSearchCollections(keyword: string, kind: string, sources: string[]): CancellablePromise<models.OnlineCollection[]>;
+export function OnlineCollectionSongs(collection: models.OnlineCollection): CancellablePromise<models.OnlineSong[]>;
 `
 
 const modelsDts = `export interface AppConfig {
@@ -120,6 +136,9 @@ export interface ConfigSettings {
   selectedPlaylistId: string;
   playlistSorts: Record<string, ConfigPlaylistSort>;
   localMetadata: Record<string, ConfigLocalMetadata>;
+  platformCookies: Record<string, string> | null;
+  autoSwitchInvalidSource: boolean;
+  pinnedOnlinePlaylists: OnlineCollection[] | null;
 }
 
 export interface UpdateInfo {
@@ -148,6 +167,7 @@ export interface ConfigSong {
   id: string;
   path: string;
   title: string;
+  cover?: string | null;
   metadata?: SongMetadata | null;
 }
 
@@ -159,6 +179,71 @@ export interface SongMetadata {
   year: string;
   duration: number;
   bitrate: number;
+}
+
+export interface OnlineSong {
+  id: string;
+  name: string;
+  artist: string;
+  album: string;
+  cover: string;
+  duration: number;
+  source: string;
+  extra: string;
+  link: string;
+  streamUrl: string;
+}
+
+export interface OnlineSource {
+  id: string;
+  name: string;
+  enabled: boolean;
+}
+
+export interface OnlineDownloadOpts {
+  dir: string;
+  withLyrics: boolean;
+  withCover: boolean;
+  embed: boolean;
+}
+
+export interface OnlineDownloadResult {
+  path: string;
+  lyricPath: string;
+  coverPath: string;
+  warning: string;
+}
+
+export interface QRLoginSession {
+  source: string;
+  key: string;
+  url: string;
+  image_url: string;
+  state?: string;
+  expires_at?: number;
+  extra?: Record<string, string> | null;
+}
+
+export interface QRLoginResult {
+  source: string;
+  key: string;
+  status: string;
+  message?: string;
+  cookie?: string;
+  cookies?: Record<string, string> | null;
+  extra?: Record<string, string> | null;
+}
+
+export interface OnlineCollection {
+  id: string;
+  name: string;
+  cover: string;
+  source: string;
+  link: string;
+  kind: string;
+  creator: string;
+  trackCount: number;
+  extra: string;
 }
 `
 

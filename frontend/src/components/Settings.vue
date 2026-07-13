@@ -11,9 +11,12 @@ import WindowEffectSettings from './settings/WindowEffectSettings.vue'
 import HotkeyInput from './settings/HotkeyInput.vue'
 import DesktopLyricSettings from './settings/DesktopLyricSettings.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   settings: AppSettings
-}>()
+  updateState?: 'idle' | 'checking' | 'latest' | 'error'
+}>(), {
+  updateState: 'idle',
+})
 
 const emit = defineEmits<{
   (e: 'update:settings', settings: AppSettings): void
@@ -87,7 +90,7 @@ function handleQualityChange(event: Event) {
 <template>
   <div class="settings">
     <div class="settings-header">
-      <h1>设置</h1>
+      <h1>本地设置</h1>
       <button class="close-btn" @click="emit('close')">✕</button>
     </div>
     <div class="settings-content">
@@ -214,8 +217,26 @@ function handleQualityChange(event: Event) {
             @update:model-value="value => update({ checkUpdateOnStartup: value })"
           />
         </SettingRow>
-        <SettingRow label="检查更新" description="立即检查是否有新版本">
-          <button class="fluent-btn" @click="emit('check-update')">立即检查</button>
+        <SettingRow label="检查更新" description="立即检查是否有新版本；有新版本才会弹窗提示">
+          <div class="update-check">
+            <span
+              v-if="props.updateState === 'latest'"
+              class="update-status latest"
+            >已是最新版本</span>
+            <span
+              v-else-if="props.updateState === 'error'"
+              class="update-status error"
+            >检查失败，请重试</span>
+            <button
+              class="fluent-btn"
+              :disabled="props.updateState === 'checking'"
+              @click="emit('check-update')"
+            >
+              {{ props.updateState === 'checking'
+                ? '检查中…'
+                : (props.updateState === 'latest' || props.updateState === 'error' ? '重新检查' : '立即检查') }}
+            </button>
+          </div>
         </SettingRow>
       </SettingCard>
 
@@ -294,5 +315,24 @@ function handleQualityChange(event: Event) {
 }
 .fluent-btn:hover {
   background: var(--fluent-bg-active);
+}
+.fluent-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.update-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.update-status {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.update-status.latest {
+  color: #5fd17e;
+}
+.update-status.error {
+  color: #ff6b6b;
 }
 </style>
