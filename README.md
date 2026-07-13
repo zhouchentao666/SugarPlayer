@@ -77,6 +77,7 @@ sugarplayer/
 - `frontend/vite.config.ts` 中已固定 `target: 'es2021'` 与 `cssTarget: 'chrome100'`，以兼容 AMLL 依赖。
 - 构建时若出现 AMLL CSS nesting 警告，不影响运行。
 
-## 版本
+## 捐赠作者
 
-当前版本：`0.0.2`
+<img width="939" height="1280" alt="6188237576876003068_121" src="https://github.com/user-attachments/assets/3ece2db2-b2ff-4653-b95e-066f0810fe6b" />
+<img width="853" height="1280" alt="6188237576876003069_121" src="https://github.com/user-attachments/assets/05df2057-0840-4113-9e1e-7c7aefa06ca2" />
