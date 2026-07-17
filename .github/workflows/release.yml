@@ -45,9 +45,13 @@ jobs:
         run: choco install nsis -y
         shell: pwsh
 
-      - name: Install Wails
+      - name: Build Wails CLI from source
         run: |
-          irm https://wails.io/install.ps1 | iex
+          git clone --depth 1 -b v3 https://github.com/wailsapp/wails.git $env:RUNNER_TEMP\wails-src
+          cd $env:RUNNER_TEMP\wails-src\v3\cmd\wails
+          go build -o wails.exe
+          New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.wails\bin"
+          Copy-Item wails.exe "$env:USERPROFILE\.wails\bin\wails.exe"
           "$env:USERPROFILE\.wails\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
         shell: pwsh
 
@@ -108,9 +112,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install Wails
+      - name: Build Wails CLI from source
         run: |
-          curl -fsSL https://wails.io/install.sh | sh
+          git clone --depth 1 -b v3 https://github.com/wailsapp/wails.git $RUNNER_TEMP/wails-src
+          cd $RUNNER_TEMP/wails-src/v3/cmd/wails
+          go build -o wails
+          mkdir -p $HOME/.wails/bin
+          cp ./wails $HOME/.wails/bin/
           echo "$HOME/.wails/bin" >> $GITHUB_PATH
 
       - name: Check Wails version
@@ -161,9 +169,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install Wails
+      - name: Build Wails CLI from source
         run: |
-          curl -fsSL https://wails.io/install.sh | sh
+          git clone --depth 1 -b v3 https://github.com/wailsapp/wails.git $RUNNER_TEMP/wails-src
+          cd $RUNNER_TEMP/wails-src/v3/cmd/wails
+          go build -o wails
+          mkdir -p $HOME/.wails/bin
+          cp ./wails $HOME/.wails/bin/
           echo "$HOME/.wails/bin" >> $GITHUB_PATH
 
       - name: Check Wails version
