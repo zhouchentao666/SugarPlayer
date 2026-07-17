@@ -86,11 +86,11 @@ jobs:
         run: |
           $full = '${{ steps.ver.outputs.VERSION_FULL }}'
           $short = '${{ steps.ver.outputs.VERSION }}'
-          (Get-Content wails.json) -replace '(?m)("productVersion":\s*)"[^"]*"', "`$1`"$full`"" | Set-Content -Encoding utf8 wails.json
-          (Get-Content build/windows/info.json) -replace '(?m)("file_version":\s*)"[^"]*"', "`$1`"$full`"" | Set-Content -Encoding utf8 build/windows/info.json
-          (Get-Content build/windows/info.json) -replace '(?m)("ProductVersion":\s*)"[^"]*"', "`$1`"$full`"" | Set-Content -Encoding utf8 build/windows/info.json
-          $main = Get-Content main.go
-          $main = $main -replace '(return\s+")\d+\.\d+\.\d+(")', "`$1$short`$2"
+          (Get-Content wails.json) -replace '(?m)("productVersion":\s*)"[^"]*"', "`${1}`"$full`"" | Set-Content -Encoding utf8 wails.json
+          (Get-Content build/windows/info.json) -replace '(?m)("file_version":\s*)"[^"]*"', "`${1}`"$full`"" | Set-Content -Encoding utf8 build/windows/info.json
+          (Get-Content build/windows/info.json) -replace '(?m)("ProductVersion":\s*)"[^"]*"', "`${1}`"$full`"" | Set-Content -Encoding utf8 build/windows/info.json
+          $main = Get-Content main.go -Raw
+          $main = $main -replace '(return\s+")\d+\.\d+\.\d+(")', "`${1}$short`${2}"
           $main | Set-Content -Encoding utf8 main.go
 
       - name: Build (installer + portable exe)
