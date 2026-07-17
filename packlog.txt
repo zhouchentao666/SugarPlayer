@@ -1,0 +1,271 @@
+"uname": executable file not found in $PATH
+"uname": executable file not found in $PATH
+task: [windows:common:go:mod:tidy] go mod tidy
+task: Task "windows:common:generate:icons" is up to date
+task: [windows:common:generate:bindings] wails3 generate bindings -f '-tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui"' -clean=true -i
+Wails v3.0.0-alpha2.117 › Generate Bindings
+task: [windows:common:install:frontend:deps:npm] npm install
+
+up to date in 1s
+
+20 packages are looking for funding
+  run `npm fund` for details
+[30;46m[30;46m INFO [0m[0m [96m[96mProcessed: 352 Packages, 1 Service, 51 Methods, 1 Enum, 25 Models, 0 Events in 4.9466312s.[0m[0m
+[30;46m[30;46m INFO [0m[0m [96m[96mOutput directory: D:\zhouchentao\biancheng\Web\SugarPlayer\sugarplayer\frontend\bindings[0m[0m
+task: [windows:common:frontend:run:npm] npm run build -q
+
+> frontend@0.0.0 build
+> node scripts/prepare-bindings-dts.js && vue-tsc --noEmit && vite build
+
+[36mvite v3.2.11 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 507 modules transformed.
+warnings when minifying css:
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2177:2:
+      2177 │   &.dom {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2226:2:
+      2226 │   &.FmKaba_dirty {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2231:2:
+      2231 │   &:has( > *):hover {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2235:2:
+      2235 │   &:has( > *):active {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2250:2:
+      2250 │   & span {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2256:2:
+      2256 │   & .FmKaba_romanWord {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2263:2:
+      2263 │   & .FmKaba_rubyWord {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2271:2:
+      2271 │   & .FmKaba_wordWithRuby {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2278:2:
+      2278 │   & .FmKaba_wordBody {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2284:2:
+      2284 │   & > span, & span.FmKaba_emphasizeWrapper {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2284:12:
+      2284 │   & > span, & span.FmKaba_emphasizeWrapper {
+           ╵             ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2292:4:
+      2292 │     &.FmKaba_emphasize, & span.FmKaba_emphasize {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2292:24:
+      2292 │     &.FmKaba_emphasize, & span.FmKaba_emphasize {
+           ╵                         ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2297:6:
+      2297 │       & > span {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2314:2:
+      2314 │   & .FmKaba_lyricMainLine {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2318:2:
+      2318 │   &.FmKaba_active {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2341:2:
+      2341 │   &:empty {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2397:2:
+      2397 │   &.FmKaba_enabled {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2401:2:
+      2401 │   & > * {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2411:2:
+      2411 │   &.FmKaba_duet {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2432:2:
+      2432 │   &:hover .FmKaba_lyricLine, &:hover .FmKaba_lyricLineWrapper {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2432:29:
+      2432 │   &:hover .FmKaba_lyricLine, &:hover .FmKaba_lyricLineWrapper {
+           ╵                              ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2436:2:
+      2436 │   &.FmKaba_hasDuetLine {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2437:4:
+      2437 │     & .FmKaba_lyricLine:not(.FmKaba_lyricDuetLine) {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2441:4:
+      2441 │     & .FmKaba_lyricDuetLine {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2445:4:
+      2445 │     & .FmKaba_lyricLineWrapper:has(.FmKaba_lyricDuetLine) {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2448:6:
+      2448 │       & .FmKaba_bgWrapper {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2452:6:
+      2452 │       & .FmKaba_bgWrapperTop {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2458:2:
+      2458 │   &:not(.FmKaba_playing) .FmKaba_bgWrapper {
+           ╵   ^
+
+
+rendering chunks...
+[90m[37m[2mdist/[22m[90m[39m[32massets/nunito-v16-latin-regular.06f3af3f.woff2  [39m [2m18.53 KiB[22m
+[90m[37m[2mdist/[22m[90m[39m[32mindex.html                                      [39m [2m0.42 KiB[22m
+[90m[37m[2mdist/[22m[90m[39m[35massets/index.467e3661.css                       [39m [2m97.69 KiB / gzip: 15.46 KiB[22m
+[90m[37m[2mdist/[22m[90m[39m[36massets/index.36fb698d.js                        [39m [33m749.18 KiB / gzip: 234.79 KiB[39m
+
+(!) Some chunks are larger than 500 KiB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/guide/en/#outputmanualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+task: [windows:generate:syso] wails3 generate syso -arch amd64 -icon windows/icon.ico -manifest windows/wails.exe.manifest -info windows/info.json -out ../wails_windows_amd64.syso
+task: [windows:build:native] go build -tags production -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui" -o "bin/sugarplayer.exe"
+task: [windows:build:native] powershell Remove-item *.syso
+task: [windows:create:nsis:installer] wails3 generate webview2bootstrapper -dir "D:\zhouchentao\biancheng\Web\SugarPlayer\sugarplayer/build/windows/nsis"
+options.Directory D:\zhouchentao\biancheng\Web\SugarPlayer\sugarplayer/build/windows/nsis
+cleaned options.Directory D:\zhouchentao\biancheng\Web\SugarPlayer\sugarplayer\build\windows\nsis
+[92m[0m
+[92mNeed documentation? Run: [0m[94m]8;;https://v3.wails.io/getting-started/your-first-app/\[4mwails3 docs[0m[94m]8;;\[0m
+[31;107m[31;107m ♥  [0m[0m [92m[92mIf Wails is useful to you or your company, please consider sponsoring the project: [94m]8;;https://github.com/sponsors/leaanthony\[4mwails3 sponsor[0m[92m[94m]8;;\[0m[92m[0m[0m
+task: [windows:create:nsis:installer] 
+makensis -DARG_WAILS_AMD64_BINARY="D:\zhouchentao\biancheng\Web\SugarPlayer\sugarplayer\bin\sugarplayer.exe" "..\installer\project.nsi"
+
+
+Command line defined: "ARG_WAILS_AMD64_BINARY=D:\zhouchentao\biancheng\Web\SugarPlayer\sugarplayer\bin\sugarplayer.exe"
+Processing config: C:\Users\kobexi\AppData\Local\electron-builder\Cache\nsis\nsis-3.0.4.1\nsisconf.nsh
+Processing script file: "..\installer\project.nsi" (ACP)
+
+Processed 1 file, writing output (x86-unicode):
+
+Output: "D:\zhouchentao\biancheng\Web\SugarPlayer\sugarplayer\build\bin\sugarplayer-amd64-installer.exe"
+Install: 4 pages (256 bytes), 1 section (16408 bytes), 723 instructions (20244 bytes), 1064 strings (7678 bytes), 1 language table (302 bytes).
+Uninstall: 1 page (128 bytes), 1 section (16408 bytes), 46 instructions (1288 bytes), 368 strings (2264 bytes), 1 language table (226 bytes).
+
+Using zlib compression.
+
+EXE header size:              126464 / 39424 bytes
+Install code:                   5604 / 45352 bytes
+Install data:               10773976 / 24881527 bytes
+Uninstall code+data:           88579 / 88654 bytes
+CRC (0xE76A841A):                  4 / 4 bytes
+
+Total size:                 10994627 / 25054961 bytes (43.8%)
+[92m[0m
+[92mNeed documentation? Run: [0m[94m]8;;https://v3.wails.io/getting-started/your-first-app/\[4mwails3 docs[0m[94m]8;;\[0m
+[31;107m[31;107m ♥  [0m[0m [92m[92mIf Wails is useful to you or your company, please consider sponsoring the project: [94m]8;;https://github.com/sponsors/leaanthony\[4mwails3 sponsor[0m[92m[94m]8;;\[0m[92m[0m[0m

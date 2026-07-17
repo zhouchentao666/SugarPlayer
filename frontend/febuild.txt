@@ -1,0 +1,221 @@
+
+> frontend@0.0.0 build
+> node scripts/prepare-bindings-dts.js && vue-tsc --noEmit && vite build
+
+[36mvite v3.2.11 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 680 modules transformed.
+warnings when minifying css:
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2177:2:
+      2177 │   &.dom {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2226:2:
+      2226 │   &.FmKaba_dirty {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2231:2:
+      2231 │   &:has( > *):hover {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2235:2:
+      2235 │   &:has( > *):active {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2250:2:
+      2250 │   & span {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2256:2:
+      2256 │   & .FmKaba_romanWord {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2263:2:
+      2263 │   & .FmKaba_rubyWord {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2271:2:
+      2271 │   & .FmKaba_wordWithRuby {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2278:2:
+      2278 │   & .FmKaba_wordBody {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2284:2:
+      2284 │   & > span, & span.FmKaba_emphasizeWrapper {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2284:12:
+      2284 │   & > span, & span.FmKaba_emphasizeWrapper {
+           ╵             ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2292:4:
+      2292 │     &.FmKaba_emphasize, & span.FmKaba_emphasize {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2292:24:
+      2292 │     &.FmKaba_emphasize, & span.FmKaba_emphasize {
+           ╵                         ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2297:6:
+      2297 │       & > span {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2314:2:
+      2314 │   & .FmKaba_lyricMainLine {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2318:2:
+      2318 │   &.FmKaba_active {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2341:2:
+      2341 │   &:empty {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2397:2:
+      2397 │   &.FmKaba_enabled {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2401:2:
+      2401 │   & > * {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2411:2:
+      2411 │   &.FmKaba_duet {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2432:2:
+      2432 │   &:hover .FmKaba_lyricLine, &:hover .FmKaba_lyricLineWrapper {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2432:29:
+      2432 │   &:hover .FmKaba_lyricLine, &:hover .FmKaba_lyricLineWrapper {
+           ╵                              ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2436:2:
+      2436 │   &.FmKaba_hasDuetLine {
+           ╵   ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2437:4:
+      2437 │     & .FmKaba_lyricLine:not(.FmKaba_lyricDuetLine) {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2441:4:
+      2441 │     & .FmKaba_lyricDuetLine {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2445:4:
+      2445 │     & .FmKaba_lyricLineWrapper:has(.FmKaba_lyricDuetLine) {
+           ╵     ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2448:6:
+      2448 │       & .FmKaba_bgWrapper {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2452:6:
+      2452 │       & .FmKaba_bgWrapperTop {
+           ╵       ^
+
+
+▲ [WARNING] CSS nesting syntax is not supported in the configured target environment ("chrome100") [invalid-@nest]
+
+    <stdin>:2458:2:
+      2458 │   &:not(.FmKaba_playing) .FmKaba_bgWrapper {
+           ╵   ^
+
+
+rendering chunks...
+[90m[37m[2mdist/[22m[90m[39m[32massets/nunito-v16-latin-regular.06f3af3f.woff2  [39m [2m18.53 KiB[22m
+[90m[37m[2mdist/[22m[90m[39m[32mindex.html                                      [39m [2m0.42 KiB[22m
+[90m[37m[2mdist/[22m[90m[39m[35massets/index.b488356b.css                       [39m [2m97.69 KiB / gzip: 15.46 KiB[22m
+[90m[37m[2mdist/[22m[90m[39m[36massets/index.b6c80602.js                        [39m [33m1266.54 KiB / gzip: 408.79 KiB[39m
+
+(!) Some chunks are larger than 500 KiB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/guide/en/#outputmanualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

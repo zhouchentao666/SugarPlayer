@@ -145,6 +145,15 @@ func (a *App) OnlineSearch(keyword string, sources []string) ([]OnlineSong, erro
 	return out, nil
 }
 
+// OnlineQualityLevels 返回某在线歌曲在指定音源下可选的音质标识
+// （仅 QQ音乐 / 酷狗音乐支持；其余音源返回空）。
+func (a *App) OnlineQualityLevels(song OnlineSong) []string {
+	if song.Source != "qq" && song.Source != "kugou" {
+		return nil
+	}
+	return core.GetQualityLevels(song.Source, toModelSong(song))
+}
+
 // OnlineLyric returns the LRC lyrics for an online song.
 func (a *App) OnlineLyric(song OnlineSong) (string, error) {
 	fn := core.GetLyricFunc(song.Source)
@@ -172,9 +181,11 @@ func (a *App) OnlineSources() []OnlineSource {
 		}
 		enabled := !map[string]bool{"bilibili": true, "joox": true, "jamendo": true, "fivesing": true}[name]
 		sources = append(sources, OnlineSource{
-			ID:      name,
-			Name:    core.GetSourceDescription(name),
-			Enabled: enabled,
+			ID:            name,
+			Name:          core.GetSourceDescription(name),
+			Enabled:       enabled,
+			Recommend:     core.GetRecommendFunc(name) != nil,
+			UserPlaylists: core.GetUserPlaylistsFunc(name) != nil,
 		})
 	}
 	return sources
@@ -182,9 +193,11 @@ func (a *App) OnlineSources() []OnlineSource {
 
 // OnlineSource describes a single music source for the UI.
 type OnlineSource struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Enabled bool   `json:"enabled"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Enabled       bool   `json:"enabled"`
+	Recommend     bool   `json:"recommend"`
+	UserPlaylists bool   `json:"userPlaylists"`
 }
 
 // registerOnlineProxy adds a streaming proxy endpoint to the audio server so the
@@ -194,6 +207,7 @@ func (s *AudioServer) registerOnlineProxy() {
 		source := strings.TrimSpace(r.URL.Query().Get("source"))
 		id := strings.TrimSpace(r.URL.Query().Get("id"))
 		extraRaw := strings.TrimSpace(r.URL.Query().Get("extra"))
+		quality := strings.TrimSpace(r.URL.Query().Get("quality"))
 		if source == "" || id == "" {
 			http.NotFound(w, r)
 			return
@@ -208,6 +222,13 @@ func (s *AudioServer) registerOnlineProxy() {
 		song := &model.Song{ID: id, Source: source}
 		if extraRaw != "" {
 			_ = json.Unmarshal([]byte(extraRaw), &song.Extra)
+		}
+		// 用户选择的音质（仅 QQ/酷狗生效），失败由引擎回退到内置音质
+		if quality != "" {
+			if song.Extra == nil {
+				song.Extra = map[string]string{}
+			}
+			song.Extra["quality"] = quality
 		}
 
 		downloadURL, err := fn(song)

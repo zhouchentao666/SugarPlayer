@@ -76,32 +76,34 @@ type ConfigDesktopLyric struct {
 
 // ConfigSettings represents app settings in persisted config.
 type ConfigSettings struct {
-	Theme                string                         `json:"theme"`
-	AccentColor          string                         `json:"accentColor"`
-	Quality              string                         `json:"quality"`
-	Autoplay             bool                           `json:"autoplay"`
-	SavePlaylistAndSong  bool                           `json:"savePlaylistAndSong"`
-	SaveWindowPosition   bool                           `json:"saveWindowPosition"`
-	WindowEffect         string                         `json:"windowEffect"`
-	CustomImagePath      string                         `json:"customImagePath"`
-	CustomImageOpacity   float64                        `json:"customImageOpacity"`
-	CustomImageBlur      float64                        `json:"customImageBlur"`
-	SongColorOpacity     float64                        `json:"songColorOpacity"`
-	SongColorBlur        float64                        `json:"songColorBlur"`
-	FullScreenBackground string                         `json:"fullScreenBackground"`
-	ImmersivePlayerBar   bool                           `json:"immersivePlayerBar"`
-	Hotkeys              map[string]string              `json:"hotkeys"`
-	CheckUpdateOnStartup bool                           `json:"checkUpdateOnStartup"`
-	AutoStart            bool                           `json:"autoStart"`
-	TrayEnabled          bool                           `json:"trayEnabled"`
-	CloseToTray          bool                           `json:"closeToTray"`
-	DesktopLyric         ConfigDesktopLyric             `json:"desktopLyric"`
-	SelectedPlaylistID   string                         `json:"selectedPlaylistId"`
-	PlaylistSorts        map[string]ConfigPlaylistSort  `json:"playlistSorts"`
-	LocalMetadata        map[string]ConfigLocalMetadata `json:"localMetadata"`
-	PlatformCookies      map[string]string              `json:"platformCookies"`
-	AutoSwitchInvalidSource bool                        `json:"autoSwitchInvalidSource"`
-	PinnedOnlinePlaylists []ConfigOnlineCollection      `json:"pinnedOnlinePlaylists"`
+	Theme                   string                         `json:"theme"`
+	AccentColor             string                         `json:"accentColor"`
+	Quality                 string                         `json:"quality"`
+	Autoplay                bool                           `json:"autoplay"`
+	SavePlaylistAndSong     bool                           `json:"savePlaylistAndSong"`
+	SaveWindowPosition      bool                           `json:"saveWindowPosition"`
+	WindowEffect            string                         `json:"windowEffect"`
+	CustomImagePath         string                         `json:"customImagePath"`
+	CustomImageOpacity      float64                        `json:"customImageOpacity"`
+	CustomImageBlur         float64                        `json:"customImageBlur"`
+	SongColorOpacity        float64                        `json:"songColorOpacity"`
+	SongColorBlur           float64                        `json:"songColorBlur"`
+	FullScreenBackground    string                         `json:"fullScreenBackground"`
+	ImmersivePlayerBar      bool                           `json:"immersivePlayerBar"`
+	Hotkeys                 map[string]string              `json:"hotkeys"`
+	CheckUpdateOnStartup    bool                           `json:"checkUpdateOnStartup"`
+	AutoStart               bool                           `json:"autoStart"`
+	TrayEnabled             bool                           `json:"trayEnabled"`
+	CloseToTray             bool                           `json:"closeToTray"`
+	DesktopLyric            ConfigDesktopLyric             `json:"desktopLyric"`
+	SelectedPlaylistID      string                         `json:"selectedPlaylistId"`
+	PlaylistSorts           map[string]ConfigPlaylistSort  `json:"playlistSorts"`
+	LocalMetadata           map[string]ConfigLocalMetadata `json:"localMetadata"`
+	PlatformCookies         map[string]string              `json:"platformCookies"`
+	AutoSwitchInvalidSource bool                           `json:"autoSwitchInvalidSource"`
+	PinnedOnlinePlaylists   []ConfigOnlineCollection       `json:"pinnedOnlinePlaylists"`
+	OnlineSearchSources     []string                       `json:"onlineSearchSources"`
+	OnlineSearchHistory     []string                       `json:"onlineSearchHistory"`
 }
 
 // ConfigOnlineCollection is a pinned online playlist/album persisted to config.

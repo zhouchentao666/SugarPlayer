@@ -8,6 +8,7 @@ import {
   OpenInExplorer,
 } from '../../bindings/sugarplayer/app'
 import type { OnlineSong, OnlineDownloadResult } from '../../bindings/sugarplayer/models'
+import { currentOnlineSong } from '../composables/onlineState'
 
 const props = defineProps<{
   show: boolean
@@ -33,6 +34,28 @@ const error = ref('')
 const result = ref<OnlineDownloadResult | null>(null)
 
 const dirHint = computed(() => dir.value || '默认：音乐库 / SugarPlayer')
+
+// 下载使用当前音质：若下载的正是正在播放的歌曲，则沿用其已选音质；否则取歌曲自身 extra 中的音质
+function parseQuality(extra?: string): string {
+  if (!extra) return ''
+  try {
+    const obj = JSON.parse(extra) as Record<string, string>
+    return obj['quality'] || ''
+  } catch {
+    return ''
+  }
+}
+
+const currentQuality = computed(() => {
+  const song = props.song
+  if (!song) return ''
+  const cur = currentOnlineSong.value
+  if (cur && cur.source === song.source && cur.id === song.id) {
+    const q = parseQuality(cur.extra)
+    if (q) return q
+  }
+  return parseQuality(song.extra)
+})
 
 watch(
   () => [props.show, props.song],
@@ -92,6 +115,7 @@ async function startDownload() {
       withLyrics: withLyrics.value,
       withCover: withCover.value,
       embed: embed.value,
+      quality: currentQuality.value,
     })
     result.value = res
   } catch (e) {

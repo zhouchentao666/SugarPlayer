@@ -8,27 +8,38 @@ import {
   OnlineUserPlaylists,
   OnlineSearchCollections,
   OnlineCollectionSongs,
+  OnlinePlaylistCategories,
+  OnlineCategoryPlaylists,
 } from '../../bindings/sugarplayer/app'
-import type { OnlineSong, OnlineSource, OnlineCollection } from '../../bindings/sugarplayer/models'
+import type { OnlineSong, OnlineSource, OnlineCollection, OnlineCategorySource, OnlineCategoryItem } from '../../bindings/sugarplayer/models'
 import type { Song } from '../types'
 import OnlineDownloadDialog from './OnlineDownloadDialog.vue'
+import CommentList from './CommentList.vue'
 
 const props = defineProps<{
   currentSong: Song | null
   autoSwitch: boolean
   pinnedCollections: OnlineCollection[]
   openCollection: OnlineCollection | null
+  favoritedKeys: string[]
+  section: 'search' | 'discover'
+  searchSources: string[]
+  searchHistory: string[]
 }>()
 
 const emit = defineEmits<{
   (e: 'play', list: OnlineSong[], index: number): void
-  (e: 'favorite', song: OnlineSong): void
+  (e: 'add-to-queue', song: OnlineSong): void
+  (e: 'request-add-to-playlist', song: OnlineSong): void
+  (e: 'unfavorite', song: OnlineSong): void
   (e: 'toggle-pin', collection: OnlineCollection): void
+  (e: 'update:searchSources', sources: string[]): void
+  (e: 'update:searchHistory', history: string[]): void
 }>()
 
-const favorited = ref<Set<string>>(new Set())
 const downloadSong = ref<OnlineSong | null>(null)
 const showDownload = ref(false)
+const showCommentsSong = ref<OnlineSong | null>(null)
 const toast = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -43,20 +54,25 @@ function favoriteKey(song: OnlineSong): string {
 }
 
 function isFavorited(song: OnlineSong): boolean {
-  return favorited.value.has(favoriteKey(song))
+  return props.favoritedKeys.includes(favoriteKey(song))
 }
 
 function toggleFavorite(song: OnlineSong) {
-  const key = favoriteKey(song)
-  if (favorited.value.has(key)) return
-  favorited.value = new Set(favorited.value).add(key)
-  emit('favorite', song)
-  showToast('已添加到「我的喜欢」')
+  if (isFavorited(song)) {
+    emit('unfavorite', song)
+    showToast('已取消收藏')
+  } else {
+    emit('request-add-to-playlist', song)
+  }
 }
 
 function openDownload(song: OnlineSong) {
   downloadSong.value = song
   showDownload.value = true
+}
+
+function openComments(song: OnlineSong) {
+  showCommentsSong.value = song
 }
 
 // ---------- 搜索 / 视图状态 ----------
@@ -72,6 +88,40 @@ const collections = ref<OnlineCollection[]>([])
 const currentCollection = ref<OnlineCollection | null>(null)
 const listTitle = ref('')
 const discoverOrigin = ref(false)
+
+// 发现页：平台单选 + 分类标签（推荐 / 我的 / 分类）
+const discoverPlatform = ref('') // '' 表示全部
+const discoverCategory = ref<'recommend' | 'user' | 'category' | null>(null)
+
+const showRecommendTab = computed(() => {
+  if (discoverPlatform.value === '') return allSources.value.some(s => s.recommend)
+  const s = allSources.value.find(x => x.id === discoverPlatform.value)
+  return !!s?.recommend
+})
+
+const showUserTab = computed(() => {
+  if (discoverPlatform.value === '') return allSources.value.some(s => s.userPlaylists)
+  const s = allSources.value.find(x => x.id === discoverPlatform.value)
+  return !!s?.userPlaylists
+})
+
+// 可用的分类标签（顺序即默认顺序，第一个为默认）
+const discoverTabs = computed(() => {
+  const tabs: { key: 'recommend' | 'user' | 'category'; label: string }[] = []
+  if (showRecommendTab.value) tabs.push({ key: 'recommend', label: '推荐' })
+  if (showUserTab.value) tabs.push({ key: 'user', label: '我的' })
+  tabs.push({ key: 'category', label: '分类' })
+  return tabs
+})
+
+const defaultDiscoverTab = computed<'recommend' | 'user' | 'category'>(() => discoverTabs.value[0]?.key ?? 'category')
+
+// 歌单分类树（按平台筛选）
+const categoryTree = ref<OnlineCategorySource[]>([])
+const categoryLoading = ref(false)
+const categoryError = ref('')
+const expandedGroups = ref<Record<string, boolean>>({})
+const activeCategory = ref<{ source: string; id: string; name: string } | null>(null)
 
 const loading = ref(false)
 const loaded = ref(false)
@@ -93,24 +143,42 @@ onMounted(async () => {
   try {
     const sources = await OnlineSources()
     allSources.value = sources
-    selected.value = sources.filter(s => s.enabled).map(s => s.id)
+    // 优先使用已保存的勾选；首次启动默认全部启用并写回持久化
+    if (props.searchSources && props.searchSources.length) {
+      selected.value = props.searchSources.filter(id => sources.some(s => s.id === id))
+    } else {
+      selected.value = sources.filter(s => s.enabled).map(s => s.id)
+      emit('update:searchSources', [...selected.value])
+    }
+    if (props.section === 'discover') ensureDiscoverCategory()
   } catch {
     allSources.value = []
   }
 })
 
+// 切到「发现」时默认选中第一个分类标签
+watch(
+  () => props.section,
+  (s) => {
+    if (s === 'discover') ensureDiscoverCategory()
+  }
+)
+
 function toggleSource(id: string) {
   const i = selected.value.indexOf(id)
   if (i >= 0) selected.value.splice(i, 1)
   else selected.value.push(id)
+  emit('update:searchSources', [...selected.value])
 }
 
 function selectAll() {
   selected.value = allSources.value.map(s => s.id)
+  emit('update:searchSources', [...selected.value])
 }
 
 function clearAll() {
   selected.value = []
+  emit('update:searchSources', [...selected.value])
 }
 
 const resolving = ref(false)
@@ -147,6 +215,9 @@ async function batchResolve() {
 async function search() {
   const q = keyword.value.trim()
   if (!q) return
+  // 记录搜索历史（去重、最多保留 20 条）
+  const hist = [q, ...props.searchHistory.filter(h => h !== q)].slice(0, 20)
+  emit('update:searchHistory', hist)
   loading.value = true
   error.value = ''
   loaded.value = false
@@ -180,8 +251,58 @@ function onSearchInputEnter(e: KeyboardEvent) {
   if (e.key === 'Enter') search()
 }
 
-// ---------- 发现页：每日推荐 / 我的歌单 ----------
-async function loadRecommend() {
+// 点击历史记录：回填并重新搜索
+function applyHistory(h: string) {
+  keyword.value = h
+  search()
+}
+
+function removeHistory(h: string) {
+  emit('update:searchHistory', props.searchHistory.filter(x => x !== h))
+}
+
+function clearHistory() {
+  emit('update:searchHistory', [])
+}
+
+// ---------- 发现页：平台单选 + 分类（推荐 / 我的 / 分类） ----------
+function selectDiscoverPlatform(id: string) {
+  discoverPlatform.value = id
+  // 当前分类在新平台不可用时重置
+  if (discoverCategory.value === 'user' && !showUserTab.value) discoverCategory.value = null
+  if (discoverCategory.value === 'recommend' && !showRecommendTab.value) discoverCategory.value = null
+  // 已选分类则按新平台重新加载（分类标签需重建树）
+  if (discoverCategory.value) applyDiscoverCategory()
+}
+
+function selectDiscoverCategory(cat: 'recommend' | 'user' | 'category') {
+  if (cat === 'user' && !showUserTab.value) return
+  if (cat === 'recommend' && !showRecommendTab.value) return
+  discoverCategory.value = cat
+  applyDiscoverCategory()
+}
+
+// 确保发现页有默认选中的标签（默认第一个）
+function ensureDiscoverCategory() {
+  if (!discoverCategory.value || !discoverTabs.value.some(t => t.key === discoverCategory.value)) {
+    discoverCategory.value = defaultDiscoverTab.value
+  }
+  applyDiscoverCategory()
+}
+
+// 进入某分类标签：推荐/我的直接拉取；分类则加载树（默认展开第一个分组）
+async function applyDiscoverCategory() {
+  const cat = discoverCategory.value
+  if (!cat) return
+  activeCategory.value = null
+  if (cat === 'recommend' || cat === 'user') {
+    await loadDiscover(cat)
+    return
+  }
+  await loadCategoryTree()
+}
+
+async function loadDiscover(cat: 'recommend' | 'user') {
   loading.value = true
   error.value = ''
   loaded.value = false
@@ -189,9 +310,16 @@ async function loadRecommend() {
   listKind.value = 'collections'
   currentCollection.value = null
   discoverOrigin.value = true
-  listTitle.value = '每日推荐歌单'
+  activeCategory.value = null
+  const src = discoverPlatform.value ? [discoverPlatform.value] : []
   try {
-    collections.value = await OnlineRecommendPlaylists([])
+    if (cat === 'recommend') {
+      listTitle.value = '每日推荐歌单'
+      collections.value = await OnlineRecommendPlaylists(src)
+    } else {
+      listTitle.value = '我的歌单'
+      collections.value = await OnlineUserPlaylists(src)
+    }
     loaded.value = true
   } catch (e) {
     collections.value = []
@@ -201,7 +329,48 @@ async function loadRecommend() {
   }
 }
 
-async function loadUserPlaylists() {
+// 歌单分类树
+async function loadCategoryTree() {
+  mode.value = 'discover' // 关键：切到分类时复位视图，避免仍显示上一标签（推荐/我的）的歌单
+  collections.value = []
+  loaded.value = false
+  categoryLoading.value = true
+  categoryError.value = ''
+  try {
+    const src = discoverPlatform.value ? [discoverPlatform.value] : []
+    categoryTree.value = await OnlinePlaylistCategories(src)
+    // 默认展开第一个分组
+    const firstKey = firstGroupKey()
+    expandedGroups.value = firstKey ? { [firstKey]: true } : {}
+  } catch (e) {
+    categoryTree.value = []
+    categoryError.value = e instanceof Error ? e.message : '分类加载失败'
+  } finally {
+    categoryLoading.value = false
+  }
+}
+
+function firstGroupKey(): string {
+  for (const src of categoryTree.value) {
+    for (const g of src.groups) {
+      return `${src.source}|${g.name}`
+    }
+  }
+  return ''
+}
+
+function isGroupExpanded(source: string, name: string): boolean {
+  return expandedGroups.value[`${source}|${name}`] ?? false
+}
+
+function toggleGroup(source: string, name: string) {
+  const key = `${source}|${name}`
+  expandedGroups.value = { ...expandedGroups.value, [key]: !isGroupExpanded(source, name) }
+}
+
+// 点击分类：直接在主界面展示该分类的歌单（不打开新界面）
+async function selectCategoryItem(item: OnlineCategoryItem) {
+  activeCategory.value = { source: item.source, id: item.id, name: item.name }
   loading.value = true
   error.value = ''
   loaded.value = false
@@ -209,9 +378,9 @@ async function loadUserPlaylists() {
   listKind.value = 'collections'
   currentCollection.value = null
   discoverOrigin.value = true
-  listTitle.value = '我的歌单'
   try {
-    collections.value = await OnlineUserPlaylists([])
+    listTitle.value = `${sourceNameMap.value[item.source] ?? item.source} · ${item.name}`
+    collections.value = await OnlineCategoryPlaylists(item.source, item.id, item.name)
     loaded.value = true
   } catch (e) {
     collections.value = []
@@ -241,10 +410,22 @@ async function openCollectionSongs(col: OnlineCollection) {
   }
 }
 
+// 返回按钮：推荐 / 我的 视图下不显示（标签常驻，无需返回）
+const showListBack = computed(() => {
+  if (discoverOrigin.value && (discoverCategory.value === 'recommend' || discoverCategory.value === 'user')) {
+    return false
+  }
+  return true
+})
+
 function goBack() {
   if (currentCollection.value) {
     currentCollection.value = null
     listKind.value = 'collections'
+  } else if (activeCategory.value) {
+    // 从分类歌单返回分类树
+    activeCategory.value = null
+    mode.value = 'discover'
   } else {
     mode.value = 'discover'
     discoverOrigin.value = false
@@ -284,6 +465,11 @@ function playIndex(index: number) {
   emit('play', results.value, index)
 }
 
+// 单击在线歌曲：添加到播放列表（不替换）
+function addToQueue(song: OnlineSong) {
+  emit('add-to-queue', song)
+}
+
 function isPlaying(song: OnlineSong): boolean {
   return props.currentSong?.id === `online:${song.source}:${song.id}`
 }
@@ -298,7 +484,7 @@ function formatDuration(seconds: number): string {
 
 <template>
   <div class="online-view">
-    <div class="search-panel">
+    <div v-if="section === 'search'" class="search-panel">
       <div class="search-row">
         <div class="seg">
           <button :class="['seg-item', { active: searchType === 'song' }]" @click="searchType = 'song'">单曲</button>
@@ -342,34 +528,121 @@ function formatDuration(seconds: number): string {
       </div>
     </div>
 
+    <!-- 发现页：平台单选 + 分类（推荐 / 我的 / 分类） -->
+    <div v-if="section === 'discover' && !currentCollection" class="discover-panel">
+      <div class="platform-bar">
+        <button
+          :class="['platform-chip', { active: discoverPlatform === '' }]"
+          @click="selectDiscoverPlatform('')"
+        >
+          全部
+        </button>
+        <button
+          v-for="src in allSources"
+          :key="src.id"
+          :class="['platform-chip', { active: discoverPlatform === src.id }]"
+          @click="selectDiscoverPlatform(src.id)"
+        >
+          {{ src.name }}
+        </button>
+      </div>
+      <div class="cat-tabs">
+        <button
+          v-for="tab in discoverTabs"
+          :key="tab.key"
+          :class="['cat-tab', { active: discoverCategory === tab.key }]"
+          @click="selectDiscoverCategory(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+    </div>
+
     <div class="results">
-      <!-- 发现页 -->
-      <div v-if="mode === 'discover'" class="discover">
-        <h2 class="discover-title">发现</h2>
-        <div class="discover-grid">
-          <button class="discover-card" @click="loadRecommend">
-            <span class="discover-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />
-                <circle cx="12" cy="12" r="3.2" />
+      <!-- 搜索历史（仅搜索区） -->
+      <div v-if="section === 'search' && mode === 'discover'" class="discover">
+        <h2 class="discover-title">搜索历史</h2>
+        <div v-if="searchHistory.length" class="history-list">
+          <div
+            v-for="h in searchHistory"
+            :key="h"
+            class="history-item"
+            @click="applyHistory(h)"
+          >
+            <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <span class="history-text">{{ h }}</span>
+            <button
+              class="history-del"
+              title="删除"
+              @click.stop="removeHistory(h)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
               </svg>
-            </span>
-            <span class="discover-name">每日推荐歌单</span>
-            <span class="discover-desc">聚合网易云 / QQ / 酷狗 / 酷我 的每日推荐</span>
-          </button>
-          <button class="discover-card" @click="loadUserPlaylists">
-            <span class="discover-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </span>
-            <span class="discover-name">我的歌单</span>
-            <span class="discover-desc">登录后查看个人创建 / 收藏的歌单</span>
-          </button>
+            </button>
+          </div>
+          <button class="history-clear" @click="clearHistory">清空历史</button>
         </div>
-        <p class="discover-hint">提示：在上方切换「歌单 / 专辑」可直接搜索；把喜欢的歌单固定到侧栏可随时打开。</p>
+        <p v-else class="discover-hint">还没有搜索记录，搜点什么吧～</p>
+      </div>
+
+      <!-- 发现页：歌单分类树（可展开 / 折叠） -->
+      <div
+        v-else-if="section === 'discover' && mode === 'discover' && discoverCategory === 'category' && !activeCategory"
+        class="discover category-tree"
+      >
+        <div v-if="categoryLoading" class="state">
+          <div class="spinner"></div>
+          <span>正在加载分类…</span>
+        </div>
+        <div v-else-if="categoryError" class="state error">
+          <span>{{ categoryError }}</span>
+        </div>
+        <div v-else-if="!categoryTree.length" class="state">
+          <span>该音源暂不支持歌单分类</span>
+        </div>
+        <template v-else>
+          <div v-for="src in categoryTree" :key="src.source" class="cat-source">
+            <div class="cat-source-title">{{ src.name }}</div>
+            <div v-for="group in src.groups" :key="group.name" class="cat-group">
+              <button class="cat-group-head" @click="toggleGroup(src.source, group.name)">
+                <svg
+                  class="cat-arrow"
+                  :class="{ open: isGroupExpanded(src.source, group.name) }"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="9 6 15 12 9 18" />
+                </svg>
+                <span>{{ group.name }}</span>
+              </button>
+              <div v-show="isGroupExpanded(src.source, group.name)" class="cat-chip-list">
+                <button
+                  v-for="item in group.categories"
+                  :key="item.id + item.name"
+                  :class="['cat-chip', { hot: item.hot }]"
+                  @click="selectCategoryItem(item)"
+                >
+                  {{ item.name }}
+                  <span v-if="item.hot" class="cat-hot">HOT</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- 发现页：未选分类时的提示 -->
+      <div v-else-if="section === 'discover' && mode === 'discover'" class="discover">
+        <p class="discover-hint">选择上方分类查看对应歌单</p>
       </div>
 
       <!-- 加载 / 错误 -->
@@ -384,7 +657,7 @@ function formatDuration(seconds: number): string {
       <!-- 歌单 / 专辑 网格 -->
       <template v-else-if="listKind === 'collections'">
         <div class="list-toolbar">
-          <button class="back-btn" @click="goBack">
+          <button v-if="showListBack" class="back-btn" @click="goBack">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
@@ -490,6 +763,7 @@ function formatDuration(seconds: number): string {
               v-for="(song, index) in results"
               :key="song.source + ':' + song.id"
               :class="['song-item', { playing: isPlaying(song) }]"
+              @click="addToQueue(song)"
               @dblclick="playIndex(index)"
             >
               <div class="col-cover">
@@ -535,6 +809,11 @@ function formatDuration(seconds: number): string {
                     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
                   </svg>
                 </button>
+                <button class="icon-btn" title="评论" @click.stop="openComments(song)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                  </svg>
+                </button>
                 <button class="icon-btn" title="下载" @click.stop="openDownload(song)">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -554,6 +833,28 @@ function formatDuration(seconds: number): string {
         :song="downloadSong"
         @close="showDownload = false"
       />
+
+      <Transition name="modal-fade">
+        <div v-if="showCommentsSong" class="comment-modal-mask" @click.self="showCommentsSong = null">
+          <div class="comment-modal">
+            <div class="cm-head">
+              <div class="cm-title">
+                <span>歌曲评论</span>
+                <span v-if="showCommentsSong" class="cm-song">{{ showCommentsSong.name }} - {{ showCommentsSong.artist }}</span>
+              </div>
+              <button class="cm-close" title="关闭" @click="showCommentsSong = null">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div class="cm-body">
+              <CommentList :song="showCommentsSong" />
+            </div>
+          </div>
+        </div>
+      </Transition>
 
       <Transition name="toast-fade">
         <div v-if="toast" class="toast">{{ toast }}</div>
@@ -751,62 +1052,256 @@ function formatDuration(seconds: number): string {
   font-weight: 700;
 }
 
-.discover-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
+/* 发现页：平台单选 + 分类 */
+.discover-panel {
+  padding: 16px 24px 4px;
+  flex-shrink: 0;
 }
 
-.discover-card {
+.platform-bar {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.platform-chip {
+  padding: 6px 14px;
   border: 1px solid var(--fluent-border);
   border-radius: 16px;
-  background: var(--fluent-bg-glass);
-  text-align: left;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  font-size: 13px;
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  transition: all 0.18s ease;
 }
 
-.discover-card:hover {
+.platform-chip:hover {
   background: var(--fluent-bg-hover);
-  border-color: var(--fluent-accent);
-  transform: translateY(-2px);
+  color: var(--fluent-text);
 }
 
-.discover-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+.platform-chip.active {
   background: var(--fluent-accent);
+  border-color: var(--fluent-accent);
   color: #fff;
 }
 
-.discover-icon svg {
-  width: 24px;
-  height: 24px;
+.cat-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 14px;
+  border-bottom: 1px solid var(--fluent-border);
 }
 
-.discover-name {
-  font-size: 15px;
+.cat-tab {
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.cat-tab:hover {
+  color: var(--fluent-text);
+}
+
+.cat-tab.active {
+  color: var(--fluent-accent);
+  border-bottom-color: var(--fluent-accent);
   font-weight: 600;
 }
 
-.discover-desc {
-  font-size: 12px;
+/* 歌单分类树 */
+.category-tree {
+  padding-top: 8px;
+}
+
+.cat-source {
+  margin-bottom: 18px;
+}
+
+.cat-source-title {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--fluent-text-secondary);
-  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.cat-group {
+  margin-bottom: 6px;
+}
+
+.cat-group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  color: var(--fluent-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.18s ease;
+}
+
+.cat-group-head:hover {
+  color: var(--fluent-accent);
+}
+
+.cat-arrow {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.cat-arrow.open {
+  transform: rotate(90deg);
+}
+
+.cat-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 8px 20px;
+}
+
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid var(--fluent-border);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--fluent-text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.cat-chip:hover {
+  background: var(--fluent-bg-hover);
+  border-color: var(--fluent-accent);
+}
+
+.cat-chip.hot {
+  border-color: rgba(255, 92, 124, 0.5);
+  color: #ff5c7c;
+}
+
+.cat-hot {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: #ff5c7c;
+  color: #fff;
+  line-height: 14px;
 }
 
 .discover-hint {
   margin: 18px 0 0;
   font-size: 12px;
   color: var(--fluent-text-secondary);
+}
+
+/* 搜索历史 */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--fluent-border);
+  border-radius: 10px;
+  background: var(--fluent-bg-glass);
+  color: var(--fluent-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.history-item:hover {
+  background: var(--fluent-bg-hover);
+  border-color: var(--fluent-accent);
+}
+
+.history-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--fluent-text-secondary);
+  flex-shrink: 0;
+}
+
+.history-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-del {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.history-item:hover .history-del {
+  opacity: 1;
+}
+
+.history-del:hover {
+  background: var(--fluent-bg-active);
+  color: #ff8080;
+}
+
+.history-del svg {
+  width: 14px;
+  height: 14px;
+}
+
+.history-clear {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--fluent-border);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.history-clear:hover {
+  background: var(--fluent-bg-hover);
+  color: var(--fluent-text);
 }
 
 /* 列表工具条 */
@@ -1302,5 +1797,100 @@ function formatDuration(seconds: number): string {
 .toast-fade-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(8px);
+}
+
+.comment-modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 130;
+}
+
+.comment-modal {
+  width: min(560px, 92vw);
+  height: min(680px, 82vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--fluent-bg-glass);
+  backdrop-filter: blur(40px) saturate(125%);
+  -webkit-backdrop-filter: blur(40px) saturate(125%);
+  border: 1px solid var(--fluent-border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.cm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--fluent-border);
+  flex-shrink: 0;
+}
+
+.cm-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cm-title > span:first-child {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fluent-text);
+}
+
+.cm-song {
+  font-size: 12px;
+  color: var(--fluent-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.cm-close:hover {
+  background: var(--fluent-bg-hover);
+  color: var(--fluent-text);
+}
+
+.cm-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.cm-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 14px;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
 }
 </style>

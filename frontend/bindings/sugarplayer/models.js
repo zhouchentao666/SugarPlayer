@@ -114,6 +114,8 @@
  * @property {{ [_ in string]?: string } | null} platformCookies
  * @property {boolean} autoSwitchInvalidSource
  * @property {ConfigOnlineCollection[] | null} pinnedOnlinePlaylists
+ * @property {string[] | null} onlineSearchSources
+ * @property {string[] | null} onlineSearchHistory
  */
 
 /**
@@ -136,6 +138,30 @@
  */
 
 /**
+ * OnlineCategoryGroup groups categories under a heading (e.g. 语种 / 风格).
+ * @typedef {Object} OnlineCategoryGroup
+ * @property {string} name
+ * @property {OnlineCategoryItem[] | null} categories
+ */
+
+/**
+ * OnlineCategoryItem is a single selectable playlist category (e.g. 华语 / 流行).
+ * @typedef {Object} OnlineCategoryItem
+ * @property {string} id
+ * @property {string} name
+ * @property {boolean} hot
+ * @property {string} source
+ */
+
+/**
+ * OnlineCategorySource holds the full playlist-category tree for one music source.
+ * @typedef {Object} OnlineCategorySource
+ * @property {string} source
+ * @property {string} name
+ * @property {OnlineCategoryGroup[] | null} groups
+ */
+
+/**
  * OnlineCollection is a playlist or album returned by the online music sources.
  * It is the unit that can be searched, recommended, listed as "my playlists",
  * opened to show its songs, and pinned to the sidebar.
@@ -152,12 +178,41 @@
  */
 
 /**
+ * OnlineComment 是一条归一化后的评论（含楼中楼回复）。
+ * @typedef {Object} OnlineComment
+ * @property {string} id
+ * @property {string} text
+ * @property {number} time - 毫秒时间戳
+ * @property {string} userName
+ * @property {string} avatar
+ * @property {string} userId
+ * @property {number} likedCount
+ * @property {string} location
+ * @property {string[] | null} images
+ * @property {number} replyNum
+ * @property {OnlineComment[] | null} reply
+ */
+
+/**
+ * OnlineCommentPage 是一次评论拉取的结果页。
+ * @typedef {Object} OnlineCommentPage
+ * @property {string} source
+ * @property {string} kind
+ * @property {OnlineComment[] | null} comments
+ * @property {number} total
+ * @property {number} page
+ * @property {number} limit
+ * @property {number} maxPage
+ */
+
+/**
  * OnlineDownloadOpts controls what gets downloaded for an online song.
  * @typedef {Object} OnlineDownloadOpts
  * @property {string} dir
  * @property {boolean} withLyrics
  * @property {boolean} withCover
  * @property {boolean} embed
+ * @property {string} quality
  */
 
 /**
@@ -190,6 +245,8 @@
  * @property {string} id
  * @property {string} name
  * @property {boolean} enabled
+ * @property {boolean} recommend
+ * @property {boolean} userPlaylists
  */
 
 /**

@@ -130,12 +130,36 @@ export function LoadConfig() {
 }
 
 /**
+ * OnlineCategoryPlaylists returns the playlists for a given source + category.
+ * categoryID / categoryName come from an OnlineCategoryItem; an empty category
+ * falls back to "全部".
+ * @param {string} source
+ * @param {string} categoryID
+ * @param {string} categoryName
+ * @returns {$CancellablePromise<$models.OnlineCollection[] | null>}
+ */
+export function OnlineCategoryPlaylists(source, categoryID, categoryName) {
+    return $Call.ByID(3671643725, source, categoryID, categoryName);
+}
+
+/**
  * OnlineCollectionSongs returns the songs contained in a playlist or album.
  * @param {$models.OnlineCollection} col
  * @returns {$CancellablePromise<$models.OnlineSong[] | null>}
  */
 export function OnlineCollectionSongs(col) {
     return $Call.ByID(1856589160, col);
+}
+
+/**
+ * OnlineComments 根据歌曲来源拉取评论。kind 为 "latest"（最新）或 "hot"（热门）。
+ * @param {$models.OnlineSong} song
+ * @param {string} kind
+ * @param {number} page
+ * @returns {$CancellablePromise<$models.OnlineCommentPage>}
+ */
+export function OnlineComments(song, kind, page) {
+    return $Call.ByID(1072243236, song, kind, page);
 }
 
 /**
@@ -164,6 +188,27 @@ export function OnlineIsUnlocked() {
  */
 export function OnlineLyric(song) {
     return $Call.ByID(698690785, song);
+}
+
+/**
+ * OnlinePlaylistCategories returns the full playlist-category tree aggregated
+ * from every source that supports categories (netease / qq / kugou / kuwo / ...).
+ * When sources is empty, all category-capable sources are used.
+ * @param {string[] | null} sources
+ * @returns {$CancellablePromise<$models.OnlineCategorySource[] | null>}
+ */
+export function OnlinePlaylistCategories(sources) {
+    return $Call.ByID(25275800, sources);
+}
+
+/**
+ * OnlineQualityLevels 返回某在线歌曲在指定音源下可选的音质标识
+ * （仅 QQ音乐 / 酷狗音乐支持；其余音源返回空）。
+ * @param {$models.OnlineSong} song
+ * @returns {$CancellablePromise<string[] | null>}
+ */
+export function OnlineQualityLevels(song) {
+    return $Call.ByID(1408172468, song);
 }
 
 /**

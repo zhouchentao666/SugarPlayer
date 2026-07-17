@@ -18,6 +18,8 @@ const emit = defineEmits<{
   (e: 'add-music-files'): void
   (e: 'add-music-folder'): void
   (e: 'play-song', index: number): void
+  (e: 'play-all'): void
+  (e: 'add-to-queue', song: Song): void
   (e: 'add-to-playlist', playlistId: string, songs: Song[]): void
   (e: 'replace-to-playlist', playlistId: string, songs: Song[]): void
   (e: 'update-sort', payload: { playlistId: string; mode: SortMode; order: SortOrder }): void
@@ -100,6 +102,10 @@ function handleAddSingleToPlaylist(playlistId: string, song: Song) {
 function handleReorder(songs: Song[]) {
   updateSongs(songs)
 }
+
+function handleAddToQueue(song: Song) {
+  emit('add-to-queue', song)
+}
 </script>
 
 <template>
@@ -110,6 +116,12 @@ function handleReorder(songs: Song[]) {
         <span class="song-count">{{ props.playlist.songs.length }} 首歌曲</span>
       </div>
       <div class="playlist-actions">
+        <button class="action-button play-all-btn" :disabled="props.playlist.songs.length === 0" @click="emit('play-all')">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <span>播放全部</span>
+        </button>
         <button class="action-button" @click="emit('add-music-files')">
           <span class="icon">+</span>
           <span>添加音乐</span>
@@ -139,6 +151,7 @@ function handleReorder(songs: Song[]) {
       :sort-mode="sortMode"
       :search-query="searchQuery"
       @play="playSong"
+      @add-to-queue="handleAddToQueue"
       @toggle="toggleSelection"
       @remove="removeSong"
       @reorder="handleReorder"
@@ -219,6 +232,27 @@ function handleReorder(songs: Song[]) {
 
 .action-button:hover {
   background: var(--fluent-bg-active);
+}
+
+.play-all-btn {
+  background: var(--fluent-accent);
+  color: #fff;
+}
+
+.play-all-btn:hover {
+  filter: brightness(1.08);
+  background: var(--fluent-accent);
+}
+
+.play-all-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  filter: none;
+}
+
+.play-all-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .action-button .icon {

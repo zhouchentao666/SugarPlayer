@@ -8,7 +8,7 @@ import PlaylistCreateInput from './sidebar/PlaylistCreateInput.vue'
 const props = defineProps<{
   playlists: Playlist[]
   selectedId: string
-  activeView?: 'main' | 'settings' | 'online' | 'onlinesettings'
+  activeView?: 'main' | 'settings' | 'online' | 'online-discover' | 'onlinesettings'
   pinnedCollections: OnlineCollection[]
 }>()
 
@@ -16,7 +16,8 @@ const emit = defineEmits<{
   (e: 'update:playlists', playlists: Playlist[]): void
   (e: 'update:selectedId', id: string): void
   (e: 'open-settings'): void
-  (e: 'open-online'): void
+  (e: 'open-search'): void
+  (e: 'open-discover'): void
   (e: 'open-online-settings'): void
   (e: 'select', id: string): void
   (e: 'drop-songs', payload: { targetPlaylistId: string; sourcePlaylistId: string; songIds: string[] }): void
@@ -108,8 +109,8 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
   <aside class="sidebar">
     <div class="nav-section">
       <button
-        :class="['nav-item', { active: activeView === 'online' }]"
-        @click="emit('open-online')"
+        :class="['nav-item', { active: activeView === 'online-discover' }]"
+        @click="emit('open-discover')"
       >
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -118,7 +119,19 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
             <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
           </svg>
         </span>
-        <span>在线音乐</span>
+        <span>发现</span>
+      </button>
+      <button
+        :class="['nav-item', { active: activeView === 'online' }]"
+        @click="emit('open-search')"
+      >
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </span>
+        <span>搜索</span>
       </button>
     </div>
     <div class="section">

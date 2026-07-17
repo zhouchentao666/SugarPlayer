@@ -135,6 +135,8 @@ export interface OnlineSource {
   id: string;
   name: string;
   enabled: boolean;
+  recommend: boolean;
+  userPlaylists: boolean;
 }
 
 export interface OnlineDownloadOpts {
@@ -142,6 +144,7 @@ export interface OnlineDownloadOpts {
   withLyrics: boolean;
   withCover: boolean;
   embed: boolean;
+  quality: string;
 }
 
 export interface OnlineDownloadResult {
@@ -181,4 +184,46 @@ export interface OnlineCollection {
   creator: string;
   trackCount: number;
   extra: string;
+}
+
+export interface OnlineCategoryItem {
+  id: string;
+  name: string;
+  hot: boolean;
+  source: string;
+}
+
+export interface OnlineCategoryGroup {
+  name: string;
+  categories: OnlineCategoryItem[];
+}
+
+export interface OnlineCategorySource {
+  source: string;
+  name: string;
+  groups: OnlineCategoryGroup[];
+}
+
+export interface OnlineComment {
+  id: string;
+  text: string;
+  time: number;
+  userName: string;
+  avatar: string;
+  userId: string;
+  likedCount: number;
+  location: string;
+  images: string[];
+  replyNum: number;
+  reply: OnlineComment[];
+}
+
+export interface OnlineCommentPage {
+  source: string;
+  kind: string;
+  comments: OnlineComment[];
+  total: number;
+  page: number;
+  limit: number;
+  maxPage: number;
 }

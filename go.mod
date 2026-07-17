@@ -14,6 +14,8 @@ require (
 
 replace github.com/guohuiyuan/go-music-dl => ../go-music-dl-main
 
+replace github.com/guohuiyuan/music-lib => ../music-lib-local
+
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/coder/websocket v1.8.14 // indirect

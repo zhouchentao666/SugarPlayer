@@ -21,6 +21,7 @@ type OnlineDownloadOpts struct {
 	WithLyrics bool  `json:"withLyrics"`
 	WithCover  bool  `json:"withCover"`
 	Embed      bool  `json:"embed"`
+	Quality    string `json:"quality"`
 }
 
 // OnlineDownloadResult reports where the downloaded files were written.
@@ -85,6 +86,14 @@ func (a *App) OnlineDownload(song OnlineSong, opts OnlineDownloadOpts) (*OnlineD
 
 	ms := toModelSong(song)
 	ms.Cover = realCoverURL(ms.Cover)
+	// 下载使用当前选择的音质（仅 QQ/酷狗生效）
+	quality := strings.TrimSpace(opts.Quality)
+	if quality != "" && (ms.Source == "qq" || ms.Source == "kugou") {
+		if ms.Extra == nil {
+			ms.Extra = map[string]string{}
+		}
+		ms.Extra["quality"] = quality
+	}
 
 	outDir := strings.TrimSpace(opts.Dir)
 	if outDir == "" {

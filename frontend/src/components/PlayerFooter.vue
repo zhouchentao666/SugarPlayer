@@ -1,13 +1,15 @@
 <script lang="ts" setup>
 import { type Song } from '../types'
-import { ref } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import ProgressBar from './player/ProgressBar.vue'
 import SongInfo from './player/SongInfo.vue'
 import PlayerControls, { type PlayMode } from './player/PlayerControls.vue'
 import VolumeControl from './player/VolumeControl.vue'
 import PlaybackRateControl from './player/PlaybackRateControl.vue'
+import { OnlineQualityLevels } from '../../bindings/sugarplayer/app'
+import type { OnlineSong } from '../../bindings/sugarplayer/models'
 
-defineProps<{
+const props = defineProps<{
   currentSong: Song | null
   coverUrl: string | null
   isPlaying: boolean
@@ -19,6 +21,8 @@ defineProps<{
   playMode: PlayMode
   immersive?: boolean
   desktopLyricEnabled?: boolean
+  currentOnlineSong: OnlineSong | null
+  commentsOpen?: boolean
 }>()
 
 const isHovered = ref(false)
@@ -34,7 +38,99 @@ const emit = defineEmits<{
   (e: 'cycle-mode'): void
   (e: 'toggle-queue'): void
   (e: 'toggle-desktop-lyric'): void
+  (e: 'toggle-comments'): void
+  (e: 'quality-change', quality: string): void
 }>()
+
+const QUALITY_LABELS: Record<string, string> = {
+  master: '母带',
+  atmos: '全景声',
+  hires: 'Hi-Res',
+  flac: '无损',
+  '640': '640K',
+  '320': '320K',
+  '128': '128K',
+}
+
+function qualityLabel(q: string): string {
+  return QUALITY_LABELS[q] || q
+}
+
+// 仅 QQ 音乐 / 酷狗音乐支持音质切换
+const showQuality = computed(() => {
+  const s = props.currentOnlineSong
+  return !!s && (s.source === 'qq' || s.source === 'kugou')
+})
+
+const qualityLevels = ref<string[]>([])
+const qualityOpen = ref(false)
+const qualityBtnRef = ref<HTMLElement | null>(null)
+const popStyle = ref<Record<string, string>>({})
+
+const currentQuality = computed(() => {
+  const s = props.currentOnlineSong
+  if (!s || !s.extra) return ''
+  try {
+    const obj = JSON.parse(s.extra) as Record<string, string>
+    return obj['quality'] || ''
+  } catch {
+    return ''
+  }
+})
+
+const qualityTitle = computed(() => {
+  const q = currentQuality.value
+  return q ? `音质：${qualityLabel(q)}（点击切换）` : '切换音质'
+})
+
+const qualityButtonText = computed(() => {
+  const q = currentQuality.value
+  return q ? qualityLabel(q) : '音质'
+})
+
+async function toggleQuality() {
+  if (!props.currentOnlineSong) return
+  if (qualityOpen.value) {
+    qualityOpen.value = false
+    return
+  }
+  try {
+    const levels = await OnlineQualityLevels(props.currentOnlineSong)
+    qualityLevels.value = levels || []
+  } catch {
+    qualityLevels.value = []
+  }
+  qualityOpen.value = true
+  requestAnimationFrame(positionPopover)
+}
+
+function positionPopover() {
+  const btn = qualityBtnRef.value
+  if (!btn) return
+  const rect = btn.getBoundingClientRect()
+  popStyle.value = {
+    position: 'fixed',
+    right: `${window.innerWidth - rect.right}px`,
+    bottom: `${window.innerHeight - rect.top + 8}px`,
+  }
+}
+
+function selectQuality(q: string) {
+  qualityOpen.value = false
+  emit('quality-change', q)
+}
+
+function onDocClick() {
+  if (qualityOpen.value) qualityOpen.value = false
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+})
 
 function formatDuration(seconds: number): string {
   if (!seconds || seconds < 0) return '0:00'
@@ -80,6 +176,43 @@ function formatDuration(seconds: number): string {
 
       <div class="section right" :class="{ faded: immersive && !isHovered }">
         <span class="time-label">{{ formatDuration(currentTime) }} / {{ formatDuration(duration || 0) }}</span>
+        <button
+          v-if="showQuality"
+          ref="qualityBtnRef"
+          class="side-btn quality-btn"
+          :class="{ active: qualityOpen }"
+          :title="qualityTitle"
+          @click.stop="toggleQuality"
+        >
+          {{ qualityButtonText }}
+        </button>
+        <Teleport to="body">
+          <div
+            v-if="qualityOpen && qualityLevels.length"
+            class="quality-pop"
+            :style="popStyle"
+            @click.stop
+          >
+            <div
+              v-for="q in qualityLevels"
+              :key="q"
+              class="quality-item"
+              :class="{ active: q === currentQuality }"
+              @click="selectQuality(q)"
+            >{{ qualityLabel(q) }}</div>
+          </div>
+        </Teleport>
+        <button
+          v-if="currentOnlineSong"
+          class="side-btn comment-btn"
+          :class="{ active: commentsOpen }"
+          title="评论"
+          @click="emit('toggle-comments')"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+        </button>
         <button
           class="side-btn lyric-btn"
           :class="{ active: desktopLyricEnabled }"
@@ -196,6 +329,104 @@ function formatDuration(seconds: number): string {
 .lyric-btn svg {
   width: 22px;
   height: 22px;
+}
+
+.quality-btn {
+  min-width: 40px;
+  height: 28px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fluent-border);
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.quality-btn:hover {
+  background: var(--fluent-bg-hover);
+}
+
+.quality-btn.active {
+  color: var(--fluent-accent);
+  border-color: var(--fluent-accent);
+}
+
+.player-footer.detail-mode .quality-btn {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.player-footer.detail-mode .quality-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.player-footer.detail-mode .quality-btn.active {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.quality-pop {
+  z-index: 200;
+  min-width: 96px;
+  padding: 6px;
+  background: var(--fluent-bg-glass);
+  border: 1px solid var(--fluent-border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.quality-item {
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--fluent-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.quality-item:hover {
+  background: var(--fluent-bg-hover);
+}
+
+.quality-item.active {
+  color: var(--fluent-accent);
+  font-weight: 600;
+}
+
+.comment-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.1s ease, color 0.18s ease;
+}
+
+.comment-btn:hover {
+  background: var(--fluent-bg-hover);
+}
+
+.comment-btn.active {
+  color: var(--fluent-accent);
+}
+
+.comment-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .player-footer.detail-mode .lyric-btn {

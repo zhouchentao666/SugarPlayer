@@ -60,10 +60,35 @@ import * as $models from "./models.js";
  */
 
 /**
+ * OnlineCategoryGroup groups categories under a heading (e.g. 语种 / 风格).
+ * @typedef {$models.OnlineCategoryGroup} OnlineCategoryGroup
+ */
+
+/**
+ * OnlineCategoryItem is a single selectable playlist category (e.g. 华语 / 流行).
+ * @typedef {$models.OnlineCategoryItem} OnlineCategoryItem
+ */
+
+/**
+ * OnlineCategorySource holds the full playlist-category tree for one music source.
+ * @typedef {$models.OnlineCategorySource} OnlineCategorySource
+ */
+
+/**
  * OnlineCollection is a playlist or album returned by the online music sources.
  * It is the unit that can be searched, recommended, listed as "my playlists",
  * opened to show its songs, and pinned to the sidebar.
  * @typedef {$models.OnlineCollection} OnlineCollection
+ */
+
+/**
+ * OnlineComment 是一条归一化后的评论（含楼中楼回复）。
+ * @typedef {$models.OnlineComment} OnlineComment
+ */
+
+/**
+ * OnlineCommentPage 是一次评论拉取的结果页。
+ * @typedef {$models.OnlineCommentPage} OnlineCommentPage
  */
 
 /**

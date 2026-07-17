@@ -17,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   play: [song: Song]
+  addToQueue: [song: Song]
   toggle: [id: string]
   remove: [id: string]
 }>()
@@ -54,6 +55,7 @@ function coverStyle(song: Song) {
       v-for="song in props.songs"
       :key="song.id"
       :class="['grid-card', { playing: isPlaying(song), selected: props.selectedIds.has(song.id) }]"
+      @click="!props.batchMode && emit('addToQueue', song)"
       @dblclick="emit('play', song)"
     >
       <label
@@ -70,7 +72,7 @@ function coverStyle(song: Song) {
       <button
         class="card-remove"
         title="移除"
-        @click="emit('remove', song.id)"
+        @click.stop="emit('remove', song.id)"
       >
         ✕
       </button>

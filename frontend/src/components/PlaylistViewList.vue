@@ -23,6 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   play: [song: Song]
+  addToQueue: [song: Song]
   toggle: [id: string]
   remove: [id: string]
   reorder: [songs: Song[]]
@@ -155,6 +156,7 @@ const otherPlaylists = computed(() => props.playlists.filter(p => p.id !== props
       v-for="(song, index) in props.songs"
       :key="song.id"
       :class="['song-item', { playing: isPlaying(song), selected: props.selectedIds.has(song.id), 'drag-over': dragOverIndex === index }]"
+      @click="!props.batchMode && emit('addToQueue', song)"
       @dblclick="emit('play', song)"
       @contextmenu="openContextMenu($event, song)"
       @dragover="onDragOver($event, index)"

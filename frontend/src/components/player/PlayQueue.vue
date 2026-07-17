@@ -1,20 +1,23 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import type { Playlist, Song } from '../../types'
+import type { Song } from '../../types'
 import { displayTitle, displayArtist } from '../../composables/usePlaylistDisplay'
 
 const props = defineProps<{
   show: boolean
-  playlist: Playlist | null
+  songs: Song[]
+  currentIndex: number
   currentSong: Song | null
 }>()
 
 const emit = defineEmits<{
   close: []
   play: [index: number]
+  remove: [index: number]
+  clear: []
 }>()
 
-const songs = computed(() => props.playlist?.songs || [])
+const songs = computed(() => props.songs || [])
 
 function formatDuration(seconds: number): string {
   if (!seconds || seconds < 0) return '0:00'
@@ -36,11 +39,22 @@ function isActive(song: Song): boolean {
     <div class="queue-content">
       <div class="queue-header">
         <span class="queue-title">播放列表</span>
-        <button class="queue-close" @click="emit('close')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
+        <span class="queue-count">{{ songs.length }} 首</span>
+        <div class="queue-header-actions">
+          <button
+            v-if="songs.length > 0"
+            class="queue-clear"
+            title="清空播放列表"
+            @click="emit('clear')"
+          >
+            清空
+          </button>
+          <button class="queue-close" @click="emit('close')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="queue-body">
         <div
@@ -56,6 +70,13 @@ function isActive(song: Song): boolean {
             <div class="item-artist">{{ displayArtist(song) }}</div>
           </div>
           <span class="item-duration">{{ formatDuration(song.metadata?.duration || 0) }}</span>
+          <button
+            class="item-remove"
+            title="从播放列表移除"
+            @click.stop="emit('remove', index)"
+          >
+            ✕
+          </button>
         </div>
         <div v-if="songs.length === 0" class="queue-empty">暂无歌曲</div>
       </div>
@@ -106,7 +127,7 @@ function isActive(song: Song): boolean {
 .queue-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 16px;
   border-bottom: 1px solid var(--fluent-border);
   flex-shrink: 0;
@@ -115,6 +136,34 @@ function isActive(song: Song): boolean {
 .queue-title {
   font-size: 15px;
   font-weight: 600;
+}
+
+.queue-count {
+  font-size: 12px;
+  color: var(--fluent-text-secondary);
+}
+
+.queue-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.queue-clear {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.queue-clear:hover {
+  background: var(--fluent-bg-hover);
+  color: var(--fluent-text);
 }
 
 .queue-close {
@@ -205,6 +254,32 @@ function isActive(song: Song): boolean {
   font-size: 11px;
   color: var(--fluent-text-secondary);
   flex-shrink: 0;
+}
+
+.item-remove {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fluent-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.queue-item:hover .item-remove {
+  opacity: 1;
+}
+
+.item-remove:hover {
+  background: var(--fluent-close-hover);
+  color: #fff;
 }
 
 .queue-empty {

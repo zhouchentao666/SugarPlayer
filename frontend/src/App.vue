@@ -26,6 +26,7 @@ import UpdateDialog from './components/UpdateDialog.vue'
 import type { UpdateInfo } from './components/UpdateDialog.vue'
 import { useAudioPlayer } from './composables/useAudioPlayer'
 import { usePlaylists } from './composables/usePlaylists'
+import { currentOnlineSong } from './composables/onlineState'
 import { useConfig, type AppSettings, type ConfigPlayback, type ConfigWindow, DEFAULT_HOTKEYS, DEFAULT_DESKTOP_LYRIC } from './composables/useConfig'
 import { useLyrics } from './composables/useLyrics'
 import { useWindowEffect } from './composables/useWindowEffect'
@@ -35,19 +36,22 @@ import { useDesktopLyric } from './composables/useDesktopLyric'
 import DesktopLyricApp from './DesktopLyricApp.vue'
 import PlayQueue from './components/player/PlayQueue.vue'
 import OnlineView from './components/OnlineView.vue'
+import PlayerComments from './components/PlayerComments.vue'
+import AddToPlaylistDialog from './components/AddToPlaylistDialog.vue'
 import type { PlayMode } from './components/player/PlayerControls.vue'
 import type { Song } from './types'
 import type { OnlineSong, OnlineCollection } from '../bindings/sugarplayer/models'
 import type { SortMode, SortOrder } from './composables/usePlaylistView'
 import { localMetadata, type LocalSongMetadata } from './composables/useLocalMetadata'
 
-const view = ref<'main' | 'settings' | 'online' | 'onlinesettings'>('main')
+const view = ref<'main' | 'settings' | 'online' | 'online-discover' | 'onlinesettings'>('main')
 // 从侧栏点击固定歌单时，临时持有要打开的歌单，传给 OnlineView
 const pendingCollection = ref<OnlineCollection | null>(null)
 const isLoading = ref(true)
 const audioRef = ref<HTMLAudioElement | null>(null)
 const showPlayerDetail = ref(false)
 const showQueue = ref(false)
+const showComments = ref(false)
 const playMode = ref<PlayMode>('sequential')
 const updateInfo = ref<UpdateInfo | null>(null)
 // 手动检查更新的内联状态（在「本地设置」中显示）：
@@ -81,6 +85,8 @@ const settings = ref<AppSettings>({
   platformCookies: {},
   autoSwitchInvalidSource: true,
   pinnedOnlinePlaylists: [],
+  onlineSearchSources: [],
+  onlineSearchHistory: [],
 })
 
 const playbackState = ref<ConfigPlayback>({
@@ -144,16 +150,13 @@ function pickRandomIndex(current: number, count: number): number {
 }
 
 function playNext() {
-  if (audio.playlistId.value === 'online') {
-    playOnlineNeighbor(1)
+  const count = audio.queue.value.length
+  if (count === 0) return
+  if (audio.index.value < 0) {
+    audio.playQueueAt(0)
     return
   }
-  if (!audio.playlistId.value) return
-  const playlist = playlists.value.find(p => p.id === audio.playlistId.value)
-  if (!playlist || playlist.songs.length === 0) return
-  const count = playlist.songs.length
   const current = audio.index.value
-
   if (playMode.value === 'stop') return
 
   let nextIndex = current
@@ -168,19 +171,18 @@ function playNext() {
     nextIndex = current + 1
     if (nextIndex >= count) nextIndex = 0
   }
-  playSong(audio.playlistId.value, nextIndex)
+  audio.playQueueAt(nextIndex)
 }
 
 function playPrev() {
-  if (audio.playlistId.value === 'online') {
-    playOnlineNeighbor(-1)
+  const count = audio.queue.value.length
+  if (count === 0) return
+  if (audio.index.value < 0) {
+    audio.playQueueAt(0)
     return
   }
-  if (!audio.playlistId.value) return
-  const playlist = playlists.value.find(p => p.id === audio.playlistId.value)
-  if (!playlist || playlist.songs.length === 0) return
-  const count = playlist.songs.length
   const current = audio.index.value
+  if (playMode.value === 'stop') return
 
   let prevIndex = current
   if (playMode.value === 'shuffle') {
@@ -194,21 +196,20 @@ function playPrev() {
     prevIndex = current - 1
     if (prevIndex < 0) prevIndex = count - 1
   }
-  playSong(audio.playlistId.value, prevIndex)
-}
-
-function playOnlineNeighbor(delta: number) {
-  const list = audio.onlineList.value
-  if (!list.length) return
-  const count = list.length
-  let next = audio.onlineIndex.value + delta
-  if (next < 0) next = count - 1
-  if (next >= count) next = 0
-  audio.playOnline(list[next], list, next)
+  audio.playQueueAt(prevIndex)
 }
 
 function playOnlineSong(list: OnlineSong[], index: number) {
-  audio.playOnline(list[index], list, index)
+  audio.playOnline(list, index)
+}
+
+// 播放栏切换音质（QQ/酷狗）：重建带 quality 参数的流地址并重载当前曲目
+async function onQualityChange(quality: string) {
+  await audio.switchOnlineQuality(quality)
+}
+
+function onlineKey(song: OnlineSong): string {
+  return `online:${song.source}:${song.id}`
 }
 
 // When an online song fails to play and the auto-switch option is enabled,
@@ -219,13 +220,26 @@ async function handleOnlinePlayError(song: OnlineSong) {
   switchingSource = true
   try {
     const alt = await SwitchSongSource(song)
-    if (alt.source !== song.source || alt.id !== song.id) {
-      const list = audio.onlineList.value
-      const idx = audio.onlineIndex.value
-      if (idx >= 0 && idx < list.length) {
-        list[idx] = alt
-        audio.playOnline(alt, list, idx)
+    const i = audio.index.value
+    audio.onlineMap.set(onlineKey(alt), alt)
+    if (i >= 0 && i < audio.queue.value.length) {
+      const q = [...audio.queue.value]
+      const old = q[i]
+      q[i] = {
+        ...old,
+        path: alt.streamUrl,
+        title: alt.name,
+        cover: alt.cover,
+        metadata: {
+          ...(old.metadata || { title: '', artist: '', album: '', genre: '', year: '', duration: 0, bitrate: 0 }),
+          title: alt.name,
+          artist: alt.artist,
+          album: alt.album,
+          duration: alt.duration,
+        },
       }
+      audio.queue.value = q
+      audio.playQueueAt(i)
     }
   } catch {
     // 换源失败，保持原状态
@@ -268,28 +282,75 @@ function realCoverURL(url: string): string {
   return url
 }
 
-// Add an online song to the local "我的喜欢" playlist so it can be played later
-// (stored with the online:// scheme, resolved to a stream at play time).
-function favoriteOnlineSong(song: OnlineSong) {
-  const local = onlineSongToLocal(song)
-  if (!playlists.value.some(p => p.id === 'favorites')) {
-    playlists.value = [
-      ...playlists.value,
-      { id: 'favorites', name: '我的喜欢', songs: [], folders: [] },
-    ]
+// 已收藏的在线歌曲键集合（source:id），用于在线页心形按钮状态。
+const favoritedOnlineKeys = computed<string[]>(() => {
+  const set = new Set<string>()
+  const prefix = 'online://'
+  for (const pl of playlists.value) {
+    for (const s of pl.songs) {
+      if (s.path.startsWith(prefix)) {
+        const rest = s.path.slice(prefix.length)
+        const idx = rest.indexOf('/')
+        if (idx >= 0) {
+          const source = rest.slice(0, idx)
+          const id = decodeURIComponent(rest.slice(idx + 1).split('?')[0])
+          set.add(`${source}:${id}`)
+        }
+      }
+    }
   }
-  addSongs('favorites', [local])
+  return Array.from(set)
+})
+
+// 收藏在线歌曲：弹出歌单选择对话框。
+const addTarget = ref<OnlineSong | null>(null)
+
+function onRequestAddToPlaylist(song: OnlineSong) {
+  addTarget.value = song
+}
+
+function onAddToPlaylistSelect(playlistId: string) {
+  if (!addTarget.value) return
+  addSongs(playlistId, [onlineSongToLocal(addTarget.value)])
+  addTarget.value = null
+}
+
+function onCreatePlaylist(name: string) {
+  if (!addTarget.value) return
+  const id = `pl_${crypto.randomUUID()}`
+  const newPlaylist = { id, name, songs: [], folders: [] }
+  playlists.value = [...playlists.value, newPlaylist]
+  addSongs(id, [onlineSongToLocal(addTarget.value)])
+  addTarget.value = null
+}
+
+// 取消收藏：从所有歌单中移除该在线歌曲。
+function onUnfavorite(song: OnlineSong) {
+  const key = `${song.source}:${encodeURIComponent(song.id)}`
+  const target = `online://${key}`
+  for (const pl of playlists.value) {
+    const filtered = pl.songs.filter(s => s.path !== target)
+    if (filtered.length !== pl.songs.length) {
+      updatePlaylist({ ...pl, songs: filtered })
+    }
+  }
 }
 
 function playSong(playlistId: string, index: number, autoPlay = true) {
   const playlist = playlists.value.find(p => p.id === playlistId)
   if (!playlist || index < 0 || index >= playlist.songs.length) return
-  audio.play(playlistId, index, playlist.songs[index], autoPlay)
+  audio.playSongs(playlist.songs, index, playlistId, autoPlay)
 }
 
 function playCurrentSong(index: number) {
   if (!currentPlaylist.value) return
   playSong(currentPlaylist.value.id, index)
+}
+
+// 播放全部：用整个歌单替换播放列表并从第一首开始
+function playAllCurrent() {
+  if (!currentPlaylist.value) return
+  audio.playSongs(currentPlaylist.value.songs, 0, currentPlaylist.value.id)
 }
 
 function handleTogglePlay() {
@@ -331,6 +392,15 @@ function unpinCollection(col: OnlineCollection) {
     p => !(p.source === col.source && p.id === col.id && p.kind === col.kind)
   )
   updateSettings({ ...settings.value, pinnedOnlinePlaylists: next })
+}
+
+// 在线搜索：持久化勾选的音源与搜索历史
+function updateSearchSources(sources: string[]) {
+  settings.value.onlineSearchSources = sources
+}
+
+function updateSearchHistory(history: string[]) {
+  settings.value.onlineSearchHistory = history
 }
 const { handleClose, restoreSession } = useSession(settings, playbackState, windowState, save, playlists, audio, selectPlaylist)
 
@@ -582,7 +652,8 @@ onUnmounted(() => {
         @update:playlists="updatePlaylists"
         @update:selected-id="selectedId = $event"
         @open-settings="view = 'settings'"
-        @open-online="view = 'online'"
+        @open-search="view = 'online'"
+        @open-discover="view = 'online-discover'"
         @open-online-settings="view = 'onlinesettings'"
         @select="onSelectPlaylist"
         @drop-songs="handleDropSongs"
@@ -602,19 +673,30 @@ onUnmounted(() => {
             @add-music-files="currentPlaylist && addMusicFiles(currentPlaylist.id)"
             @add-music-folder="currentPlaylist && addMusicFolder(currentPlaylist.id)"
             @play-song="playCurrentSong"
+            @play-all="playAllCurrent"
+            @add-to-queue="audio.addToQueue"
             @add-to-playlist="addSongs"
             @replace-to-playlist="replaceSongs"
             @update-sort="handleUpdateSort"
           />
           <OnlineView
-            v-else-if="view === 'online'"
+            v-else-if="view === 'online' || view === 'online-discover'"
+            :key="view"
+            :section="view === 'online-discover' ? 'discover' : 'search'"
             :current-song="audio.currentSong.value"
             :auto-switch="settings.autoSwitchInvalidSource"
             :pinned-collections="settings.pinnedOnlinePlaylists"
             :open-collection="pendingCollection"
+            :favorited-keys="favoritedOnlineKeys"
+            :search-sources="settings.onlineSearchSources"
+            :search-history="settings.onlineSearchHistory"
             @play="playOnlineSong"
-            @favorite="favoriteOnlineSong"
+            @add-to-queue="audio.addOnlineToQueue"
+            @request-add-to-playlist="onRequestAddToPlaylist"
+            @unfavorite="onUnfavorite"
             @toggle-pin="togglePinCollection"
+            @update:search-sources="updateSearchSources"
+            @update:search-history="updateSearchHistory"
           />
           <Settings
             v-else-if="view === 'settings'"
@@ -647,6 +729,8 @@ onUnmounted(() => {
       :play-mode="playMode"
       :immersive="settings.immersivePlayerBar"
       :desktop-lyric-enabled="settings.desktopLyric.enabled"
+      :current-online-song="currentOnlineSong"
+      :comments-open="showComments"
       @toggle-play="handleTogglePlay"
       @prev="playPrev"
       @next="playNext"
@@ -657,6 +741,15 @@ onUnmounted(() => {
       @cycle-mode="cyclePlayMode"
       @toggle-queue="toggleQueue"
       @toggle-desktop-lyric="toggleDesktopLyric"
+      @toggle-comments="showComments = !showComments"
+      @quality-change="onQualityChange"
+    />
+
+    <PlayerComments
+      v-if="currentOnlineSong && showComments"
+      :song="currentOnlineSong"
+      :fullscreen="showPlayerDetail"
+      @close="showComments = false"
     />
     <PlayerDetail
       :show="showPlayerDetail"
@@ -669,6 +762,7 @@ onUnmounted(() => {
       :background-mode="settings.fullScreenBackground"
       :immersive-player-bar="settings.immersivePlayerBar"
       :cover-transition="settings.coverTransition"
+      :hide-lyrics="showPlayerDetail && showComments"
       @close="togglePlayerDetail"
       @seek="audio.seek"
     />
@@ -679,10 +773,21 @@ onUnmounted(() => {
     />
     <PlayQueue
       :show="showQueue"
-      :playlist="currentPlaylist ?? null"
+      :songs="audio.queue.value"
+      :current-index="audio.index.value"
       :current-song="audio.currentSong.value"
       @close="showQueue = false"
-      @play="playCurrentSong"
+      @play="audio.playQueueAt"
+      @remove="audio.removeFromQueue"
+      @clear="audio.clearQueue"
+    />
+    <AddToPlaylistDialog
+      :show="addTarget !== null"
+      :playlists="playlists"
+      :song-name="addTarget ? `${addTarget.name} - ${addTarget.artist}` : ''"
+      @close="addTarget = null"
+      @select="onAddToPlaylistSelect"
+      @create="onCreatePlaylist"
     />
     <audio ref="audioRef" style="display: none;"></audio>
   </div>

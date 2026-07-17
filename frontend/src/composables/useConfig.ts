@@ -110,6 +110,8 @@ export interface AppSettings {
   platformCookies: Record<string, string>
   autoSwitchInvalidSource: boolean
   pinnedOnlinePlaylists: OnlineCollection[]
+  onlineSearchSources: string[]
+  onlineSearchHistory: string[]
 }
 
 export interface ConfigPlayback {
@@ -211,6 +213,8 @@ export function useConfig(
           platformCookies: ((config.settings as unknown as Record<string, unknown>).platformCookies as Record<string, string>) ?? {},
           autoSwitchInvalidSource: ((config.settings as unknown as Record<string, unknown>).autoSwitchInvalidSource as boolean) ?? true,
           pinnedOnlinePlaylists: ((config.settings as unknown as Record<string, unknown>).pinnedOnlinePlaylists as OnlineCollection[]) ?? [],
+          onlineSearchSources: ((config.settings as unknown as Record<string, unknown>).onlineSearchSources as string[]) ?? [],
+          onlineSearchHistory: ((config.settings as unknown as Record<string, unknown>).onlineSearchHistory as string[]) ?? [],
         }
       }
       if (config.playback) {

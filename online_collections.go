@@ -26,6 +26,27 @@ type OnlineCollection struct {
 	Extra      string `json:"extra"`
 }
 
+// OnlineCategoryItem is a single selectable playlist category (e.g. 华语 / 流行).
+type OnlineCategoryItem struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Hot    bool   `json:"hot"`
+	Source string `json:"source"`
+}
+
+// OnlineCategoryGroup groups categories under a heading (e.g. 语种 / 风格).
+type OnlineCategoryGroup struct {
+	Name       string                `json:"name"`
+	Categories []OnlineCategoryItem `json:"categories"`
+}
+
+// OnlineCategorySource holds the full playlist-category tree for one music source.
+type OnlineCategorySource struct {
+	Source string                `json:"source"`
+	Name   string                `json:"name"`
+	Groups []OnlineCategoryGroup `json:"groups"`
+}
+
 func toOnlineCollection(p model.Playlist, kind string, port int) OnlineCollection {
 	cover := p.Cover
 	if cover != "" {
@@ -221,6 +242,101 @@ func (a *App) OnlineCollectionSongs(col OnlineCollection) ([]OnlineSong, error) 
 	out := make([]OnlineSong, 0, len(songs))
 	for _, s := range songs {
 		out = append(out, toOnlineSong(s, a.audio.port))
+	}
+	return out, nil
+}
+
+// OnlinePlaylistCategories returns the full playlist-category tree aggregated
+// from every source that supports categories (netease / qq / kugou / kuwo / ...).
+// When sources is empty, all category-capable sources are used.
+func (a *App) OnlinePlaylistCategories(sources []string) ([]OnlineCategorySource, error) {
+	if len(sources) == 0 {
+		sources = core.GetPlaylistCategorySourceNames()
+	}
+	var mu sync.Mutex
+	views := make([]OnlineCategorySource, 0, len(sources))
+	var wg sync.WaitGroup
+	for _, src := range sources {
+		fn := core.GetPlaylistCategoriesFunc(src)
+		if fn == nil {
+			continue
+		}
+		wg.Add(1)
+		go func(s string) {
+			defer wg.Done()
+			cats, err := fn()
+			if err != nil || len(cats) == 0 {
+				return
+			}
+			view := buildOnlineCategorySource(s, cats)
+			mu.Lock()
+			views = append(views, view)
+			mu.Unlock()
+		}(src)
+	}
+	wg.Wait()
+	return views, nil
+}
+
+func buildOnlineCategorySource(source string, cats []model.PlaylistCategory) OnlineCategorySource {
+	groupIndex := make(map[string]int)
+	groups := make([]OnlineCategoryGroup, 0)
+	for _, c := range cats {
+		name := strings.TrimSpace(c.Name)
+		if name == "" {
+			continue
+		}
+		groupName := strings.TrimSpace(c.Group)
+		if groupName == "" {
+			groupName = "其他"
+		}
+		idx, ok := groupIndex[groupName]
+		if !ok {
+			idx = len(groups)
+			groupIndex[groupName] = idx
+			groups = append(groups, OnlineCategoryGroup{Name: groupName})
+		}
+		groups[idx].Categories = append(groups[idx].Categories, OnlineCategoryItem{
+			ID:     strings.TrimSpace(c.ID),
+			Name:   name,
+			Hot:    c.Hot,
+			Source: source,
+		})
+	}
+	return OnlineCategorySource{
+		Source: source,
+		Name:   core.GetSourceDescription(source),
+		Groups: groups,
+	}
+}
+
+// OnlineCategoryPlaylists returns the playlists for a given source + category.
+// categoryID / categoryName come from an OnlineCategoryItem; an empty category
+// falls back to "全部".
+func (a *App) OnlineCategoryPlaylists(source, categoryID, categoryName string) ([]OnlineCollection, error) {
+	source = strings.TrimSpace(source)
+	categoryID = strings.TrimSpace(categoryID)
+	categoryName = strings.TrimSpace(categoryName)
+	if categoryName == "" {
+		categoryName = categoryID
+	}
+	if categoryName == "" {
+		categoryName = "全部"
+	}
+	fn := core.GetCategoryPlaylistsFunc(source)
+	if source == "" || fn == nil {
+		return nil, fmt.Errorf("该音源不支持歌单分类")
+	}
+	pls, err := fn(categoryID, 1, 120)
+	if err != nil {
+		return nil, err
+	}
+	for i := range pls {
+		pls[i].Source = source
+	}
+	out := make([]OnlineCollection, 0, len(pls))
+	for _, p := range pls {
+		out = append(out, toOnlineCollection(p, "playlist", a.audio.port))
 	}
 	return out, nil
 }

@@ -48,3 +48,7 @@ export function OnlineRecommendPlaylists(sources: string[]): CancellablePromise<
 export function OnlineUserPlaylists(sources: string[]): CancellablePromise<models.OnlineCollection[]>;
 export function OnlineSearchCollections(keyword: string, kind: string, sources: string[]): CancellablePromise<models.OnlineCollection[]>;
 export function OnlineCollectionSongs(collection: models.OnlineCollection): CancellablePromise<models.OnlineSong[]>;
+export function OnlineComments(song: models.OnlineSong, kind: string, page: number): CancellablePromise<models.OnlineCommentPage>;
+export function OnlinePlaylistCategories(sources: string[]): CancellablePromise<models.OnlineCategorySource[]>;
+export function OnlineCategoryPlaylists(source: string, categoryID: string, categoryName: string): CancellablePromise<models.OnlineCollection[]>;
+export function OnlineQualityLevels(song: models.OnlineSong): CancellablePromise<string[]>;

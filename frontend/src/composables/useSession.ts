@@ -58,10 +58,10 @@ export function useSession(
       const playlist = playlists.value.find(p => p.id === playbackState.value.playlistId)
       if (playlist && playbackState.value.songIndex >= 0 && playbackState.value.songIndex < playlist.songs.length) {
         selectPlaylist(playbackState.value.playlistId)
-        await audio.play(
-          playlist.id,
+        await audio.playSongs(
+          playlist.songs,
           playbackState.value.songIndex,
-          playlist.songs[playbackState.value.songIndex],
+          playlist.id,
           settings.value.autoplay
         )
         if (!settings.value.autoplay && playbackState.value.time > 0) {

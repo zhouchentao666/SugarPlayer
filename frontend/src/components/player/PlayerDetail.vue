@@ -19,6 +19,7 @@ const props = defineProps<{
   backgroundMode?: 'static' | 'dynamic'
   immersivePlayerBar?: boolean
   coverTransition?: 'fade' | 'slide-left' | 'slide-both'
+  hideLyrics?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -132,7 +133,7 @@ watch(() => props.show, (visible) => {
       <PlayerDetailLyrics
         :lyrics="props.lyrics"
         :current-time="props.currentTime"
-        :show="showLyrics"
+        :show="showLyrics && !props.hideLyrics"
         :is-playing="props.isPlaying"
         @seek="emit('seek', $event)"
       />

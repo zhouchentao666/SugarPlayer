@@ -59,6 +59,10 @@ export function OnlineRecommendPlaylists(sources: string[]): CancellablePromise<
 export function OnlineUserPlaylists(sources: string[]): CancellablePromise<models.OnlineCollection[]>;
 export function OnlineSearchCollections(keyword: string, kind: string, sources: string[]): CancellablePromise<models.OnlineCollection[]>;
 export function OnlineCollectionSongs(collection: models.OnlineCollection): CancellablePromise<models.OnlineSong[]>;
+export function OnlineComments(song: models.OnlineSong, kind: string, page: number): CancellablePromise<models.OnlineCommentPage>;
+export function OnlinePlaylistCategories(sources: string[]): CancellablePromise<models.OnlineCategorySource[]>;
+export function OnlineCategoryPlaylists(source: string, categoryID: string, categoryName: string): CancellablePromise<models.OnlineCollection[]>;
+export function OnlineQualityLevels(song: models.OnlineSong): CancellablePromise<string[]>;
 `
 
 const modelsDts = `export interface AppConfig {
@@ -198,6 +202,8 @@ export interface OnlineSource {
   id: string;
   name: string;
   enabled: boolean;
+  recommend: boolean;
+  userPlaylists: boolean;
 }
 
 export interface OnlineDownloadOpts {
@@ -205,6 +211,7 @@ export interface OnlineDownloadOpts {
   withLyrics: boolean;
   withCover: boolean;
   embed: boolean;
+  quality: string;
 }
 
 export interface OnlineDownloadResult {
@@ -244,6 +251,48 @@ export interface OnlineCollection {
   creator: string;
   trackCount: number;
   extra: string;
+}
+
+export interface OnlineCategoryItem {
+  id: string;
+  name: string;
+  hot: boolean;
+  source: string;
+}
+
+export interface OnlineCategoryGroup {
+  name: string;
+  categories: OnlineCategoryItem[];
+}
+
+export interface OnlineCategorySource {
+  source: string;
+  name: string;
+  groups: OnlineCategoryGroup[];
+}
+
+export interface OnlineComment {
+  id: string;
+  text: string;
+  time: number;
+  userName: string;
+  avatar: string;
+  userId: string;
+  likedCount: number;
+  location: string;
+  images: string[];
+  replyNum: number;
+  reply: OnlineComment[];
+}
+
+export interface OnlineCommentPage {
+  source: string;
+  kind: string;
+  comments: OnlineComment[];
+  total: number;
+  page: number;
+  limit: number;
+  maxPage: number;
 }
 `
 
