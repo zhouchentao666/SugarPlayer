@@ -46,7 +46,9 @@ jobs:
         shell: pwsh
 
       - name: Install Wails3 CLI
-        run: go install github.com/wailsapp/wails/v3/cmd/wails@latest
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wailscli@latest
+          wails version
         shell: pwsh
         env:
           GOPROXY: https://goproxy.cn,direct
@@ -78,7 +80,7 @@ jobs:
           $env:PATH += ";C:\Program Files (x86)\NSIS"
           $env:GOPROXY = "https://goproxy.cn,direct"
           $env:CGO_ENABLED = "0"
-          wails3 task windows:package
+          wails task windows:package
         shell: pwsh
 
       - uses: actions/upload-artifact@v4
@@ -107,7 +109,9 @@ jobs:
           node-version: '22'
 
       - name: Install Wails3 CLI
-        run: go install github.com/wailsapp/wails/v3/cmd/wails@latest
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wailscli@latest
+          wails version
         env:
           GOPROXY: https://goproxy.cn,direct
 
@@ -131,7 +135,7 @@ jobs:
         run: |
           export PATH="$PATH:$(go env GOPATH)/bin"
           export GOPROXY=https://goproxy.cn,direct
-          wails3 task darwin:package
+          wails task darwin:package
 
       - name: Zip .app
         run: ditto -c -k --sequesterForSecurity --keepParent bin/sugarplayer.app bin/sugarplayer-macos.zip
@@ -160,7 +164,9 @@ jobs:
           node-version: '22'
 
       - name: Install Wails3 CLI
-        run: go install github.com/wailsapp/wails/v3/cmd/wails@latest
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wailscli@latest
+          wails version
         env:
           GOPROXY: https://goproxy.cn,direct
 
@@ -184,13 +190,13 @@ jobs:
         run: |
           export PATH="$PATH:$(go env GOPATH)/bin"
           export GOPROXY=https://goproxy.cn,direct
-          wails3 task linux:build
+          wails task linux:build
 
       - name: Try build AppImage
         continue-on-error: true
         run: |
           export PATH="$PATH:$(go env GOPATH)/bin"
-          wails3 task linux:create:appimage
+          wails task linux:create:appimage
 
       - name: Package tarball
         run: tar -czf bin/sugarplayer-linux-amd64.tar.gz -C bin sugarplayer
