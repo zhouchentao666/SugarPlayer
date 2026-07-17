@@ -37,6 +37,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone local dependencies
+        shell: pwsh
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/guohuiyuan/go-music-dl.git go-music-dl-main
+          git clone --depth 1 https://github.com/guohuiyuan/music-lib.git music-lib-local
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
@@ -109,6 +116,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone local dependencies
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/guohuiyuan/go-music-dl.git go-music-dl-main
+          git clone --depth 1 https://github.com/guohuiyuan/music-lib.git music-lib-local
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
@@ -174,6 +187,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone local dependencies
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/guohuiyuan/go-music-dl.git go-music-dl-main
+          git clone --depth 1 https://github.com/guohuiyuan/music-lib.git music-lib-local
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
@@ -197,10 +216,12 @@ jobs:
       - name: Check Wails version
         run: wails3 version
 
-      - name: Install Linux GTK4 WebKit6 Deps
+      - name: Install Linux GTK WebKit Deps
         run: |
           sudo apt update
-          sudo apt install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-dev
+          sudo apt install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-4 || true
+          sudo apt install -y libwebkitgtk-6.0-dev || true
+          sudo apt install -y libwebkit2gtk-4.1-dev || true
 
       - name: Compute version
         id: ver
