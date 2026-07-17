@@ -35,7 +35,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
 
       - uses: actions/setup-node@v4
         with:
@@ -45,13 +45,15 @@ jobs:
         run: choco install nsis -y
         shell: pwsh
 
-      - name: Install Wails3 CLI
+      - name: Install Wails
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wailscli@latest
-          wails version
+          irm https://wails.io/install.ps1 | iex
+          "$env:USERPROFILE\.wails\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
         shell: pwsh
-        env:
-          GOPROXY: https://goproxy.cn,direct
+
+      - name: Check Wails version
+        run: wails version
+        shell: pwsh
 
       - name: Compute version
         id: ver
@@ -76,9 +78,7 @@ jobs:
 
       - name: Build (installer + portable exe)
         run: |
-          $env:PATH += ";$env:USERPROFILE\go\bin"
           $env:PATH += ";C:\Program Files (x86)\NSIS"
-          $env:GOPROXY = "https://goproxy.cn,direct"
           $env:CGO_ENABLED = "0"
           wails task windows:package
         shell: pwsh
@@ -102,18 +102,19 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Install Wails3 CLI
+      - name: Install Wails
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wailscli@latest
-          wails version
-        env:
-          GOPROXY: https://goproxy.cn,direct
+          curl -fsSL https://wails.io/install.sh | sh
+          echo "$HOME/.wails/bin" >> $GITHUB_PATH
+
+      - name: Check Wails version
+        run: wails version
 
       - name: Compute version
         id: ver
@@ -132,10 +133,7 @@ jobs:
           perl -i -pe 's/(return\s+\")\d+\.\d+\.\d+(\")/$1'"$short"'$2/' main.go
 
       - name: Build .app
-        run: |
-          export PATH="$PATH:$(go env GOPATH)/bin"
-          export GOPROXY=https://goproxy.cn,direct
-          wails task darwin:package
+        run: wails task darwin:package
 
       - name: Zip .app
         run: ditto -c -k --sequesterForSecurity --keepParent bin/sugarplayer.app bin/sugarplayer-macos.zip
@@ -157,18 +155,19 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Install Wails3 CLI
+      - name: Install Wails
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wailscli@latest
-          wails version
-        env:
-          GOPROXY: https://goproxy.cn,direct
+          curl -fsSL https://wails.io/install.sh | sh
+          echo "$HOME/.wails/bin" >> $GITHUB_PATH
+
+      - name: Check Wails version
+        run: wails version
 
       - name: Compute version
         id: ver
@@ -187,16 +186,11 @@ jobs:
           perl -i -pe 's/(return\s+\")\d+\.\d+\.\d+(\")/$1'"$short"'$2/' main.go
 
       - name: Build binary
-        run: |
-          export PATH="$PATH:$(go env GOPATH)/bin"
-          export GOPROXY=https://goproxy.cn,direct
-          wails task linux:build
+        run: wails task linux:build
 
       - name: Try build AppImage
         continue-on-error: true
-        run: |
-          export PATH="$PATH:$(go env GOPATH)/bin"
-          wails task linux:create:appimage
+        run: wails task linux:create:appimage
 
       - name: Package tarball
         run: tar -czf bin/sugarplayer-linux-amd64.tar.gz -C bin sugarplayer
