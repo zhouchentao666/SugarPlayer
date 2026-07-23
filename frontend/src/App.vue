@@ -203,7 +203,7 @@ function playOnlineSong(list: OnlineSong[], index: number) {
   audio.playOnline(list, index)
 }
 
-// 播放栏切换音质（QQ/酷狗）：重建带 quality 参数的流地址并重载当前曲目
+// 播放栏切换音质（网易云 / QQ / 酷狗 / 酷我）：重建带 quality 参数的流地址并重载当前曲目
 async function onQualityChange(quality: string) {
   await audio.switchOnlineQuality(quality)
 }

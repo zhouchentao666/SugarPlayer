@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guohuiyuan/go-music-dl/core"
-	"github.com/guohuiyuan/music-lib/model"
+	"sugarplayer/internal/music/core"
+	"sugarplayer/internal/music/model"
 )
 
 // OnlineCollection is a playlist or album returned by the online music sources.
@@ -36,7 +36,7 @@ type OnlineCategoryItem struct {
 
 // OnlineCategoryGroup groups categories under a heading (e.g. 语种 / 风格).
 type OnlineCategoryGroup struct {
-	Name       string                `json:"name"`
+	Name       string               `json:"name"`
 	Categories []OnlineCategoryItem `json:"categories"`
 }
 

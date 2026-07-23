@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guohuiyuan/go-music-dl/core"
-	"github.com/guohuiyuan/music-lib/model"
+	"sugarplayer/internal/music/core"
+	"sugarplayer/internal/music/model"
+
 	qrcode "github.com/skip2/go-qrcode"
 )
 

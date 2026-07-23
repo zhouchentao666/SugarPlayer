@@ -13,7 +13,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as model$0 from "../github.com/guohuiyuan/music-lib/model/models.js";
+import * as model$0 from "./internal/music/model/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -202,8 +202,8 @@ export function OnlinePlaylistCategories(sources) {
 }
 
 /**
- * OnlineQualityLevels 返回某在线歌曲在指定音源下可选的音质标识
- * （仅 QQ音乐 / 酷狗音乐支持；其余音源返回空）。
+ * OnlineQualityLevels 返回某在线歌曲在指定音源下可选的音质标识。
+ * 网易云 / QQ / 酷狗 / 酷我 通过 ZQ 网关支持 普通-无损-母带 三档。
  * @param {$models.OnlineSong} song
  * @returns {$CancellablePromise<string[] | null>}
  */

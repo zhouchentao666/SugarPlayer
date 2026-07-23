@@ -43,9 +43,12 @@ const emit = defineEmits<{
 }>()
 
 const QUALITY_LABELS: Record<string, string> = {
+  standard: '普通',
+  exhigh: '高品',
+  lossless: '无损',
+  hires: '母带',
   master: '母带',
   atmos: '全景声',
-  hires: 'Hi-Res',
   flac: '无损',
   '640': '640K',
   '320': '320K',
@@ -56,10 +59,10 @@ function qualityLabel(q: string): string {
   return QUALITY_LABELS[q] || q
 }
 
-// 仅 QQ 音乐 / 酷狗音乐支持音质切换
+// 网易云 / QQ / 酷狗 / 酷我 支持音质切换（普通-无损-母带）
 const showQuality = computed(() => {
   const s = props.currentOnlineSong
-  return !!s && (s.source === 'qq' || s.source === 'kugou')
+  return !!s && (s.source === 'netease' || s.source === 'qq' || s.source === 'kugou' || s.source === 'kuwo')
 })
 
 const qualityLevels = ref<string[]>([])

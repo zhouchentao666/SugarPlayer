@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/guohuiyuan/go-music-dl/core"
+	"sugarplayer/internal/music/core"
 )
 
 // downloadKey is the one-time key required to unlock the download feature.
@@ -17,10 +17,10 @@ const downloadKey = "7sK9pR2vG5bN8dQ4zX0cT1jL6mW3aY7"
 
 // OnlineDownloadOpts controls what gets downloaded for an online song.
 type OnlineDownloadOpts struct {
-	Dir       string `json:"dir"`
-	WithLyrics bool  `json:"withLyrics"`
-	WithCover  bool  `json:"withCover"`
-	Embed      bool  `json:"embed"`
+	Dir        string `json:"dir"`
+	WithLyrics bool   `json:"withLyrics"`
+	WithCover  bool   `json:"withCover"`
+	Embed      bool   `json:"embed"`
 	Quality    string `json:"quality"`
 }
 
@@ -86,9 +86,9 @@ func (a *App) OnlineDownload(song OnlineSong, opts OnlineDownloadOpts) (*OnlineD
 
 	ms := toModelSong(song)
 	ms.Cover = realCoverURL(ms.Cover)
-	// 下载使用当前选择的音质（仅 QQ/酷狗生效）
+	// 下载使用当前选择的音质（网易云 / QQ / 酷狗 / 酷我 通过 ZQ 网关生效）
 	quality := strings.TrimSpace(opts.Quality)
-	if quality != "" && (ms.Source == "qq" || ms.Source == "kugou") {
+	if quality != "" && (ms.Source == "netease" || ms.Source == "qq" || ms.Source == "kugou" || ms.Source == "kuwo") {
 		if ms.Extra == nil {
 			ms.Extra = map[string]string{}
 		}

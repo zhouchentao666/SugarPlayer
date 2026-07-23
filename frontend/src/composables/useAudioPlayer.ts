@@ -303,10 +303,10 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     if (audioRef.value) audioRef.value.playbackRate = clamped
   }
 
-  // 切换当前在线歌曲音质（仅 QQ/酷狗生效），重建带 quality 参数的流地址并重载音频
+  // 切换当前在线歌曲音质（网易云 / QQ / 酷狗 / 酷我 生效），重建带 quality 参数的流地址并重载音频
   async function switchOnlineQuality(quality: string) {
     const om = currentOnlineSong.value
-    if (!om || (om.source !== 'qq' && om.source !== 'kugou')) return
+    if (!om || !['qq', 'kugou', 'netease', 'kuwo'].includes(om.source)) return
 
     // 解析并更新 extra 中的 quality
     let extraObj: Record<string, string> = {}

@@ -337,10 +337,11 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
 .pinned-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 13px;
   transition: background 0.18s ease;
 }
 
@@ -349,9 +350,9 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
 }
 
 .pinned-cover {
-  width: 34px;
-  height: 34px;
-  border-radius: 7px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
   overflow: hidden;
   background: var(--fluent-bg-active);
   flex-shrink: 0;
@@ -368,7 +369,7 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
 }
 
 .pinned-cover-fallback {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--fluent-text-secondary);
 }
 

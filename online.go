@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guohuiyuan/go-music-dl/core"
-	"github.com/guohuiyuan/music-lib/model"
+	"sugarplayer/internal/music/core"
+	"sugarplayer/internal/music/model"
 )
 
 // OnlineSong is the search result returned to the frontend.
@@ -145,13 +145,15 @@ func (a *App) OnlineSearch(keyword string, sources []string) ([]OnlineSong, erro
 	return out, nil
 }
 
-// OnlineQualityLevels 返回某在线歌曲在指定音源下可选的音质标识
-// （仅 QQ音乐 / 酷狗音乐支持；其余音源返回空）。
+// OnlineQualityLevels 返回某在线歌曲在指定音源下可选的音质标识。
+// 网易云 / QQ / 酷狗 / 酷我 通过 ZQ 网关支持 普通-无损-母带 三档。
 func (a *App) OnlineQualityLevels(song OnlineSong) []string {
-	if song.Source != "qq" && song.Source != "kugou" {
+	switch song.Source {
+	case "netease", "qq", "kugou", "kuwo":
+		return core.GetQualityLevels(song.Source, toModelSong(song))
+	default:
 		return nil
 	}
-	return core.GetQualityLevels(song.Source, toModelSong(song))
 }
 
 // OnlineLyric returns the LRC lyrics for an online song.

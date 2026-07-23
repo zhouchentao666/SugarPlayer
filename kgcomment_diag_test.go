@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guohuiyuan/go-music-dl/core"
+	"sugarplayer/internal/music/core"
 )
 
 func kgSig(params string) string {
