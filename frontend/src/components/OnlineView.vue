@@ -484,7 +484,7 @@ function formatDuration(seconds: number): string {
 
 <template>
   <div class="online-view">
-    <div v-if="section === 'search'" class="search-panel">
+    <div v-if="section === 'search' && !currentCollection" class="search-panel">
       <div class="search-row">
         <div class="seg">
           <button :class="['seg-item', { active: searchType === 'song' }]" @click="searchType = 'song'">单曲</button>
@@ -529,7 +529,7 @@ function formatDuration(seconds: number): string {
     </div>
 
     <!-- 发现页：平台单选 + 分类（推荐 / 我的 / 分类） -->
-    <div v-if="section === 'discover' && !currentCollection" class="discover-panel">
+    <div v-if="section === 'discover' && !currentCollection && discoverOrigin" class="discover-panel">
       <div class="platform-bar">
         <button
           :class="['platform-chip', { active: discoverPlatform === '' }]"

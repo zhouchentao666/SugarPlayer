@@ -2,10 +2,10 @@ package migu
 
 import (
 	"errors"
-	"sugarplayer/internal/music/model"
 	"net/http"
 	"net/url"
 	"strings"
+	"sugarplayer/internal/music/model"
 )
 
 func GetDownloadURL(s *model.Song) (string, error) { return defaultMigu.GetDownloadURL(s) }
@@ -37,6 +37,58 @@ func (m *Migu) GetDownloadURL(s *model.Song) (string, error) {
 		}
 	}
 
+	// 尝试获取播放链接（优先使用新 API）
+	if url := m.getPlayUrl(contentID, resourceType, formatType); url != "" {
+		return url, nil
+	}
+
+	// 备用：使用旧版 listenSong API
+	return m.getListenSongUrl(contentID, resourceType, formatType)
+}
+
+// getPlayUrl 使用新版 API 获取播放链接
+func (m *Migu) getPlayUrl(contentID, resourceType, formatType string) string {
+	params := url.Values{}
+	params.Set("copyrightId", "0")
+	params.Set("contentId", contentID)
+	params.Set("resourceType", resourceType)
+	params.Set("toneFlag", formatType)
+	params.Set("userId", MagicUserID)
+	params.Set("channel", "0")
+
+	apiURL := "https://app.pd.nf.migu.cn/MIGUM3.0/v1.0/content/sub/listenSong.do?" + params.Encode()
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36")
+	req.Header.Set("Referer", "https://app.pd.nf.migu.cn/")
+	req.Header.Set("Cookie", m.cookie)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 302 {
+		location := resp.Header.Get("Location")
+		if location != "" && !strings.Contains(location, "error") {
+			return location
+		}
+	}
+	return ""
+}
+
+// getListenSongUrl 使用旧版 API 获取播放链接
+func (m *Migu) getListenSongUrl(contentID, resourceType, formatType string) (string, error) {
 	params := url.Values{}
 	params.Set("toneFlag", formatType)
 	params.Set("netType", "00")
@@ -72,10 +124,10 @@ func (m *Migu) GetDownloadURL(s *model.Song) (string, error) {
 
 	if resp.StatusCode == 302 {
 		location := resp.Header.Get("Location")
-		if location != "" {
+		if location != "" && !strings.Contains(location, "error") {
 			return location, nil
 		}
 	}
 
-	return apiURL, nil
+	return "", errors.New("migu download url not found")
 }

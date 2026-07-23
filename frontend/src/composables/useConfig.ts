@@ -82,10 +82,12 @@ export const DEFAULT_DESKTOP_LYRIC: DesktopLyricConfig = {
   isLock: false,
 }
 
+export type QualityLevel = 'standard' | 'exhigh' | 'lossless' | 'hires' | 'jymaster' | 'jyeffect' | 'sky'
+
 export interface AppSettings {
   theme: 'system' | 'light' | 'dark'
   accentColor: string
-  quality: 'standard' | 'high' | 'lossless'
+  quality: QualityLevel
   autoplay: boolean
   savePlaylistAndSong: boolean
   saveWindowPosition: boolean
@@ -185,10 +187,23 @@ export function useConfig(
       }
       if (config.settings) {
         const hasEffect = Boolean(config.settings.windowEffect)
+        // 音质映射：将旧版 'high' 映射到新版 'exhigh'
+        const rawQuality = config.settings.quality as string
+        const qualityMap: Record<string, QualityLevel> = {
+          'standard': 'standard',
+          'high': 'exhigh',
+          'exhigh': 'exhigh',
+          'lossless': 'lossless',
+          'hires': 'hires',
+          'jymaster': 'jymaster',
+          'jyeffect': 'jyeffect',
+          'sky': 'sky',
+        }
+        const mappedQuality = qualityMap[rawQuality] || 'standard'
         settings.value = {
           theme: (config.settings.theme as AppSettings['theme']) || 'system',
           accentColor: config.settings.accentColor || '#0078d4',
-          quality: (config.settings.quality as AppSettings['quality']) || 'standard',
+          quality: mappedQuality,
           autoplay: config.settings.autoplay ?? false,
           savePlaylistAndSong: config.settings.savePlaylistAndSong ?? true,
           saveWindowPosition: config.settings.saveWindowPosition ?? true,

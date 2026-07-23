@@ -65,8 +65,8 @@ func qzGatewayQuality(source, q string) string {
 }
 
 type qzGatewayResp struct {
-	URL    string `json:"url"`
-	Data   struct {
+	URL  string `json:"url"`
+	Data struct {
 		URL string `json:"url"`
 	} `json:"data"`
 	Code   int    `json:"code"`

@@ -1191,6 +1191,133 @@ func preservedID3v23Frames(audioData []byte, replace map[string]bool) []byte {
 	return preserved
 }
 
+// embedFLACMetadata 嵌入 FLAC 元数据（Vorbis Comment + Picture Block）
+func embedFLACMetadata(audioData []byte, title, artist, album, lyric string, coverData []byte, coverMime string) ([]byte, error) {
+	if len(audioData) < 4 || !bytes.Equal(audioData[:4], []byte("fLaC")) {
+		return audioData, nil
+	}
+
+	// 解析 FLAC 块
+	type block struct {
+		last bool
+		typ  byte
+		data []byte
+	}
+	var blocks []block
+	pos := 4
+
+	for pos < len(audioData) {
+		if pos+4 > len(audioData) {
+			break
+		}
+		header := audioData[pos]
+		last := (header & 0x80) != 0
+		typ := header & 0x7F
+		size := binary.BigEndian.Uint32(append([]byte{0}, audioData[pos+1:pos+4]...))
+		if pos+4+int(size) > len(audioData) {
+			break
+		}
+		data := audioData[pos+4 : pos+4+int(size)]
+		blocks = append(blocks, block{last: last, typ: typ, data: data})
+		pos += 4 + int(size)
+		if last {
+			break
+		}
+	}
+
+	if pos >= len(audioData) {
+		return audioData, nil
+	}
+
+	audioFrames := audioData[pos:]
+
+	// 构建新的 Vorbis Comment（块类型 4）
+	var vorbisComments []string
+	if title != "" {
+		vorbisComments = append(vorbisComments, "TITLE="+title)
+	}
+	if artist != "" {
+		vorbisComments = append(vorbisComments, "ARTIST="+artist)
+	}
+	if album != "" {
+		vorbisComments = append(vorbisComments, "ALBUM="+album)
+	}
+	if lyric != "" {
+		vorbisComments = append(vorbisComments, "LYRICS="+lyric)
+	}
+
+	var vorbisBlock []byte
+	if len(vorbisComments) > 0 {
+		// Vendor string (empty)
+		vorbisBlock = binary.LittleEndian.AppendUint32(vorbisBlock, 0)
+		// Comment count
+		vorbisBlock = binary.LittleEndian.AppendUint32(vorbisBlock, uint32(len(vorbisComments)))
+		for _, c := range vorbisComments {
+			vorbisBlock = binary.LittleEndian.AppendUint32(vorbisBlock, uint32(len(c)))
+			vorbisBlock = append(vorbisBlock, []byte(c)...)
+		}
+	}
+
+	// 构建 Picture Block（块类型 6）
+	var pictureBlock []byte
+	if len(coverData) > 0 {
+		mimeType := normalizeCoverMime(coverMime)
+		// Picture type (3 = Cover front)
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, 3)
+		// MIME type length and string
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, uint32(len(mimeType)))
+		pictureBlock = append(pictureBlock, []byte(mimeType)...)
+		// Description (empty)
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, 0)
+		// Width, Height, Color depth, Colors used (0 = unknown)
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, 0)
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, 0)
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, 0)
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, 0)
+		// Picture data length and data
+		pictureBlock = binary.BigEndian.AppendUint32(pictureBlock, uint32(len(coverData)))
+		pictureBlock = append(pictureBlock, coverData...)
+	}
+
+	// 重建 FLAC 文件
+	var out bytes.Buffer
+	out.Write([]byte("fLaC"))
+
+	// 过滤掉旧的 Vorbis Comment (4) 和 Picture (6) 块
+	var newBlocks []block
+	for _, b := range blocks {
+		if b.typ != 4 && b.typ != 6 {
+			newBlocks = append(newBlocks, b)
+		}
+	}
+
+	// 添加新的 Vorbis Comment 块
+	if len(vorbisBlock) > 0 {
+		newBlocks = append(newBlocks, block{typ: 4, data: vorbisBlock})
+	}
+	// 添加新的 Picture 块
+	if len(pictureBlock) > 0 {
+		newBlocks = append(newBlocks, block{typ: 6, data: pictureBlock})
+	}
+
+	// 写入块
+	for i, b := range newBlocks {
+		last := i == len(newBlocks)-1
+		header := b.typ
+		if last {
+			header |= 0x80
+		}
+		out.WriteByte(header)
+		sizeBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(sizeBytes, uint32(len(b.data)))
+		out.Write(sizeBytes[1:])
+		out.Write(b.data)
+	}
+
+	out.Write(audioFrames)
+	return out.Bytes(), nil
+}
+
 func embedMP3ID3v23Metadata(audioData []byte, title, artist, album, lyric string, coverData []byte, coverMime string) ([]byte, error) {
 	var frames bytes.Buffer
 	replaceFrames := map[string]bool{}
@@ -1646,6 +1773,9 @@ func EmbedSongMetadata(audioData []byte, song *model.Song, lyric string, coverDa
 	if ext == "mp3" {
 		return embedMP3ID3v23Metadata(audioData, title, artist, album, lyric, coverData, coverMime)
 	}
+	if ext == "flac" {
+		return embedFLACMetadata(audioData, title, artist, album, lyric, coverData, coverMime)
+	}
 
 	return embedAudioMetadataByFFmpeg(audioData, ext, title, artist, album, lyric, coverData, coverMime)
 }
@@ -1750,11 +1880,12 @@ func embedAudioMetadataByFFmpeg(audioData []byte, ext, title, artist, album, lyr
 }
 
 // GetQualityLevels 返回指定音源下某歌曲可选的音质标识列表。
-// 网易云 / QQ / 酷狗 / 酷我 通过 ZQ 网关支持 普通-无损-母带 三档。
+// 网易云 / QQ / 酷狗 / 酷我 通过 ZQ 网关支持多档音质。
 func GetQualityLevels(source string, song *model.Song) []string {
 	switch source {
 	case "netease", "qq", "kugou", "kuwo":
-		return []string{"standard", "lossless", "hires"}
+		// 返回所有支持的音质选项，前端会根据用户设置选择默认音质
+		return []string{"standard", "exhigh", "lossless", "hires", "jymaster", "jyeffect", "sky"}
 	default:
 		return nil
 	}

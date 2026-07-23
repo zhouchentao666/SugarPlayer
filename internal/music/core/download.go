@@ -79,7 +79,7 @@ func DownloadSongDataWithTemplate(song *model.Song, withCover bool, withLyrics b
 		case embedErr == nil:
 			finalData = embeddedData
 		case errors.Is(embedErr, ErrFFmpegNotFound):
-			warning = "ffmpeg not found, metadata embedding skipped"
+			warning = "ffmpeg not found, metadata embedding skipped for non-MP3/FLAC formats"
 		default:
 			warning = "metadata embedding failed, using original audio"
 		}

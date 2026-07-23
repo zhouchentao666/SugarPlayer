@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sugarplayer/internal/music/model"
-	"sugarplayer/internal/music/utils"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
+	"sugarplayer/internal/music/model"
+	"sugarplayer/internal/music/utils"
 )
 
 const (
@@ -433,8 +433,10 @@ func (m *Migu) convertItemToSongWithOption(item MiguSongItem, allowPaid bool) *m
 	if len(rateFormats) == 0 {
 		rateFormats = item.AudioFormats
 	}
+
+	// 如果没有格式信息（如歌单 API），使用默认格式
 	if len(rateFormats) == 0 {
-		return nil
+		return m.convertItemToSongWithDefaultFormat(item, artistNames, songName, albumName)
 	}
 
 	type validFormat struct {
@@ -534,6 +536,43 @@ func (m *Migu) convertItemToSongWithOption(item MiguSongItem, allowPaid bool) *m
 		Bitrate:  bitrate,
 		Cover:    coverURL,
 		Ext:      bestInfo.ext,
+		Link:     fmt.Sprintf("https://music.migu.cn/v3/music/song/%s", linkID),
+		Extra:    extra,
+	}
+}
+
+// convertItemToSongWithDefaultFormat 当 API 没有返回格式信息时使用默认格式
+func (m *Migu) convertItemToSongWithDefaultFormat(item MiguSongItem, artistNames []string, songName, albumName string) *model.Song {
+	coverURL := normalizeMiguImageURL(firstNonEmpty(pickMiguImage(item.ImgItems), pickMiguImage(item.AlbumImgs), item.Img1, item.Img2, item.Img3))
+
+	linkID := firstNonEmpty(item.ContentID, item.CopyrightID)
+	contentID := item.ContentID
+	if contentID == "" {
+		contentID = item.CopyrightID
+	}
+
+	// 使用默认格式：PQ (128k mp3)
+	resourceType := "2"
+	formatType := "PQ"
+
+	extra := map[string]string{
+		"content_id":    contentID,
+		"resource_type": resourceType,
+		"format_type":   formatType,
+	}
+	if item.CopyrightID != "" {
+		extra["copyright_id"] = item.CopyrightID
+	}
+
+	return &model.Song{
+		Source:   "migu",
+		ID:       fmt.Sprintf("%s|%s|%s", contentID, resourceType, formatType),
+		Name:     songName,
+		Artist:   strings.Join(artistNames, " / "),
+		Album:    albumName,
+		Duration: item.Duration,
+		Cover:    coverURL,
+		Ext:      "mp3",
 		Link:     fmt.Sprintf("https://music.migu.cn/v3/music/song/%s", linkID),
 		Extra:    extra,
 	}

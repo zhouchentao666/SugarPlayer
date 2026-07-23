@@ -43,10 +43,13 @@ const emit = defineEmits<{
 }>()
 
 const QUALITY_LABELS: Record<string, string> = {
-  standard: '普通',
-  exhigh: '高品',
+  standard: '标准',
+  exhigh: '极高',
   lossless: '无损',
-  hires: '母带',
+  hires: 'Hi-Res',
+  jymaster: '超清母带',
+  jyeffect: '沉浸声',
+  sky: '全景声',
   master: '母带',
   atmos: '全景声',
   flac: '无损',

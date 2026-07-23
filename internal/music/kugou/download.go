@@ -41,11 +41,19 @@ func (k *Kugou) GetDownloadURL(s *model.Song) (string, error) {
 		}
 	}
 
+	// 首先尝试主 API
 	info, err := k.fetchSongInfo(hash)
-	if err != nil {
-		return "", err
+	if err == nil && info != nil && info.URL != "" {
+		return info.URL, nil
 	}
-	return info.URL, nil
+
+	// 主 API 失败（包括风控 errcode 1002），尝试备用 tracker API
+	if info, err := k.fetchTrackerSongInfo(hash); err == nil && info != nil && info.URL != "" {
+		return info.URL, nil
+	}
+
+	// 最后尝试 songinfo v2 API
+	return k.GetDownloadURLBySonginfo(s)
 }
 
 func (k *Kugou) GetDownloadURLBySonginfo(s *model.Song) (string, error) {

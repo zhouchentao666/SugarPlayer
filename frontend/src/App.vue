@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, provide } from 'vue'
 import { Events } from '@wailsio/runtime'
 import {
   LoadConfig,
@@ -108,10 +108,14 @@ const currentPlaylistSort = computed(() => currentPlaylist.value ? settings.valu
 
 const { save, load } = useConfig(playlists, settings, playbackState, windowState, isLoading)
 
+// 提供 settings 给子组件使用（使用 computed 保持响应性）
+provide('settings', settings)
+
 const audio = useAudioPlayer({
   audioRef,
   onEnded: playNext,
   onOnlinePlayError: handleOnlinePlayError,
+  getDefaultQuality: () => settings.value.quality,
 })
 
 const lyrics = useLyrics(audio.currentSong)

@@ -63,9 +63,13 @@ const themes = [
 ] as const
 
 const qualities = [
-  { value: 'standard', label: '标准' },
-  { value: 'high', label: '高品质' },
-  { value: 'lossless', label: '无损' },
+  { value: 'standard', label: '标准 (128k)' },
+  { value: 'exhigh', label: '极高 (320k)' },
+  { value: 'lossless', label: '无损 (FLAC)' },
+  { value: 'hires', label: 'Hi-Res' },
+  { value: 'jymaster', label: '超清母带' },
+  { value: 'jyeffect', label: '沉浸环绕声' },
+  { value: 'sky', label: '臻品全景声' },
 ] as const
 
 const accentColors = ['#0078d4', '#107c10', '#ff8c00', '#d13438', '#881798', '#00b7c3']

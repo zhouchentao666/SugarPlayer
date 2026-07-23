@@ -202,39 +202,6 @@ type OnlineSource struct {
 	UserPlaylists bool   `json:"userPlaylists"`
 }
 
-// resolvedURLCacheEntry 缓存一次解析出的直链，供同一次播放会话内所有 Range 请求复用。
-type resolvedURLCacheEntry struct {
-	url    string
-	expiry time.Time
-}
-
-var (
-	resolvedURLCache   = map[string]resolvedURLCacheEntry{}
-	resolvedURLCacheMu sync.Mutex
-)
-
-func getResolvedURL(key string) (string, bool) {
-	resolvedURLCacheMu.Lock()
-	defer resolvedURLCacheMu.Unlock()
-	e, ok := resolvedURLCache[key]
-	if !ok || time.Now().After(e.expiry) {
-		return "", false
-	}
-	return e.url, true
-}
-
-func setResolvedURL(key, u string) {
-	resolvedURLCacheMu.Lock()
-	defer resolvedURLCacheMu.Unlock()
-	resolvedURLCache[key] = resolvedURLCacheEntry{url: u, expiry: time.Now().Add(15 * time.Minute)}
-}
-
-func invalidateResolvedURL(key string) {
-	resolvedURLCacheMu.Lock()
-	defer resolvedURLCacheMu.Unlock()
-	delete(resolvedURLCache, key)
-}
-
 // registerOnlineProxy adds a streaming proxy endpoint to the audio server so the
 // WebView can play remote audio URLs through a local, CORS-friendly, range-aware proxy.
 func (s *AudioServer) registerOnlineProxy() {
@@ -266,63 +233,35 @@ func (s *AudioServer) registerOnlineProxy() {
 			song.Extra["quality"] = quality
 		}
 
-		// 关键：同一首歌在一次播放会话内必须复用同一个直链，否则每次 Range/seek
-		// 请求都重新解析（尤其是哔哩哔哩 DASH 每次返回不同的 CDN 直链），会导致
-		// 字节偏移与上一次不一致，浏览器 seek 失败并跳回开头。
-		cacheKey := source + "|" + id + "|" + quality
-
-		doProxy := func(downloadURL string) (*http.Response, error) {
-			req, err := core.BuildSourceRequest("GET", downloadURL, source, r.Header.Get("Range"))
-			if err != nil {
-				return nil, err
-			}
-			for k, v := range r.Header {
-				if strings.EqualFold(k, "Range") {
-					continue
-				}
-				req.Header[k] = v
-			}
-			client := &http.Client{Timeout: 2 * time.Minute}
-			return client.Do(req)
-		}
-
-		downloadURL, cached := getResolvedURL(cacheKey)
-		if !cached {
-			u, err := fn(song)
-			if err != nil || u == "" {
-				http.Error(w, "failed to resolve audio url", http.StatusBadGateway)
-				return
-			}
-			downloadURL = u
-			setResolvedURL(cacheKey, downloadURL)
-		}
-
-		resp, err := doProxy(downloadURL)
-		if err != nil {
-			http.Error(w, "upstream error", http.StatusBadGateway)
+		downloadURL, err := fn(song)
+		if err != nil || downloadURL == "" {
+			http.Error(w, "failed to resolve audio url", http.StatusBadGateway)
 			return
 		}
 
-		// 缓存的直链可能已过期（403/404/410/416），失效后重新解析并重试一次。
-		if cached && (resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusNotFound ||
-			resp.StatusCode == http.StatusGone || resp.StatusCode == http.StatusRequestedRangeNotSatisfiable) {
-			resp.Body.Close()
-			invalidateResolvedURL(cacheKey)
-			if u, rerr := fn(song); rerr == nil && u != "" {
-				setResolvedURL(cacheKey, u)
-				if resp2, perr := doProxy(u); perr == nil {
-					resp = resp2
-				} else {
-					http.Error(w, "upstream error", http.StatusBadGateway)
-					return
-				}
+		req, err := core.BuildSourceRequest("GET", downloadURL, source, r.Header.Get("Range"))
+		if err != nil {
+			http.Error(w, "failed to build request", http.StatusInternalServerError)
+			return
+		}
+		for k, v := range r.Header {
+			if strings.EqualFold(k, "Range") {
+				continue
 			}
+			req.Header[k] = v
+		}
+
+		client := &http.Client{Timeout: 2 * time.Minute}
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "upstream error", http.StatusBadGateway)
+			return
 		}
 		defer resp.Body.Close()
 
 		for k, v := range resp.Header {
 			switch strings.ToLower(k) {
-			case "transfer-encoding", "date", "connection":
+			case "transfer-encoding", "date", "connection", "content-length":
 				continue
 			default:
 				w.Header()[k] = v

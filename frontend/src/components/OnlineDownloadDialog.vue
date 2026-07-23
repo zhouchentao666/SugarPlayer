@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, inject, type Ref } from 'vue'
 import {
   OnlineIsUnlocked,
   OnlineVerifyKey,
@@ -9,11 +9,15 @@ import {
 } from '../../bindings/sugarplayer/app'
 import type { OnlineSong, OnlineDownloadResult } from '../../bindings/sugarplayer/models'
 import { currentOnlineSong } from '../composables/onlineState'
+import type { AppSettings } from '../composables/useConfig'
 
 const props = defineProps<{
   show: boolean
   song: OnlineSong | null
 }>()
+
+const settingsRef = inject<Ref<AppSettings>>('settings')
+const settings = computed(() => settingsRef?.value)
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -48,13 +52,16 @@ function parseQuality(extra?: string): string {
 
 const currentQuality = computed(() => {
   const song = props.song
-  if (!song) return ''
+  if (!song) return settings.value?.quality || 'standard'
   const cur = currentOnlineSong.value
   if (cur && cur.source === song.source && cur.id === song.id) {
     const q = parseQuality(cur.extra)
     if (q) return q
   }
-  return parseQuality(song.extra)
+  const songQuality = parseQuality(song.extra)
+  if (songQuality) return songQuality
+  // 如果没有设置过音质，使用用户设置的默认音质
+  return settings.value?.quality || 'standard'
 })
 
 watch(

@@ -9,6 +9,7 @@ interface AudioPlayerOptions {
   audioRef?: Ref<HTMLAudioElement | null>
   onEnded?: () => void
   onOnlinePlayError?: (song: OnlineSong) => void
+  getDefaultQuality?: () => string
 }
 
 // 在线歌曲在队列中以 Song 形式存储，id 与 onlineMap 的 key 保持一致
@@ -16,10 +17,17 @@ function onlineKey(song: OnlineSong): string {
   return `online:${song.source}:${song.id}`
 }
 
-function toAdaptedSong(song: OnlineSong): Song {
+function toAdaptedSong(song: OnlineSong, quality?: string): Song {
+  // 如果有音质参数，添加到 streamUrl
+  let streamUrl = song.streamUrl
+  if (quality && song.source && ['netease', 'qq', 'kugou', 'kuwo'].includes(song.source)) {
+    const url = new URL(song.streamUrl)
+    url.searchParams.set('quality', quality)
+    streamUrl = url.toString()
+  }
   return {
     id: onlineKey(song),
-    path: song.streamUrl,
+    path: streamUrl,
     title: song.name,
     cover: song.cover,
     metadata: {
@@ -158,7 +166,9 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
 
   // 直接用流地址播放在线歌曲（queue 中的在线条目走这里）
   async function playOnlineStream(song: OnlineSong, autoPlay = true) {
-    const adapted = toAdaptedSong(song)
+    // 获取默认音质设置
+    const defaultQuality = options.getDefaultQuality?.()
+    const adapted = toAdaptedSong(song, defaultQuality)
     currentSong.value = adapted
     currentTime.value = 0
     duration.value = song.duration || 0
@@ -168,7 +178,7 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     await nextTick()
     if (!audioRef.value) return
     try {
-      audioRef.value.src = song.streamUrl
+      audioRef.value.src = adapted.path
       audioRef.value.load()
       audioRef.value.playbackRate = playbackRate.value
       if (autoPlay) {
@@ -216,7 +226,9 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
     onlineIndex.value = startIndex
     onlineMap.clear()
     for (const o of list) onlineMap.set(onlineKey(o), o)
-    queue.value = list.map(toAdaptedSong)
+    // 获取默认音质设置并应用到队列
+    const defaultQuality = options.getDefaultQuality?.()
+    queue.value = list.map(song => toAdaptedSong(song, defaultQuality))
     playlistId.value = 'online'
     await playQueueAt(startIndex, autoPlay)
   }
@@ -232,7 +244,8 @@ export function useAudioPlayer(options: AudioPlayerOptions = {}) {
 
   // 添加在线歌曲到播放列表
   async function addOnlineToQueue(song: OnlineSong) {
-    const adapted = toAdaptedSong(song)
+    const defaultQuality = options.getDefaultQuality?.()
+    const adapted = toAdaptedSong(song, defaultQuality)
     if (queue.value.length && queue.value[queue.value.length - 1]?.id === adapted.id) return
     onlineMap.set(onlineKey(song), song)
     queue.value = [...queue.value, adapted]

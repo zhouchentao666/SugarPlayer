@@ -4,3 +4,6 @@ node_modules
 frontend/dist
 .task/
 .trae/
+
+# 闭源 QZ 网关（api.qz.shiqianjiang.cn），不含在开源仓库中
+internal/music/qzgw/
