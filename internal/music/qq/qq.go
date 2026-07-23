@@ -416,7 +416,6 @@ func (q *QQ) fetchPlaylistDetail(id string) (*model.Playlist, []model.Song, erro
 
 	var songs []model.Song
 	for _, item := range info.Songlist {
-
 		var artistNames []string
 		for _, s := range item.Singer {
 			artistNames = append(artistNames, s.Name)

@@ -26,6 +26,12 @@ func (q *QQ) GetLyrics(s *model.Song) (string, error) {
 		songMID = s.Extra["songmid"]
 	}
 
+	// Prefer the AMLL TTML database for high-quality timestamped lyrics,
+	// falling back to the platform API below on any miss.
+	if lrc, err := lyrics.FetchAMLLLyric("qq", songMID); err == nil && strings.TrimSpace(lrc) != "" {
+		return lrc, nil
+	}
+
 	songID, _ := strconv.Atoi(s.ID)
 	if s.Extra != nil && s.Extra["song_id"] != "" {
 		songID, _ = strconv.Atoi(s.Extra["song_id"])

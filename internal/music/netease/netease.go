@@ -16,7 +16,7 @@ import (
 
 const (
 	Referer                = "http://music.163.com/"
-	SearchAPI              = "http://music.163.com/api/linux/forward"
+	SearchAPI              = "https://interface3.music.163.com/eapi/cloudsearch/pc"
 	DownloadAPI            = "http://music.163.com/weapi/song/enhance/player/url"
 	DownloadEAPI           = "https://interface3.music.163.com/eapi/song/enhance/player/url/v1"
 	DetailAPI              = "https://music.163.com/weapi/v3/song/detail"
@@ -113,29 +113,32 @@ func (n *Netease) setCachedVIPStatus(isVip bool) {
 	}
 }
 
-// cloudSearch calls the shared Netease cloud search route.
+// cloudSearch calls the shared Netease cloud search route via the eapi
+// interface (same approach used by the ZQ netease plugin: eapiRequest ->
+// /api/cloudsearch/pc). The legacy Linux-forward (/api/linux/forward) route is
+// deprecated by Netease and now frequently fails, so we mirror the plugin.
 func (n *Netease) cloudSearch(keyword string, searchType int, limit int) ([]byte, error) {
-	eparams := map[string]interface{}{
-		"method": "POST",
-		"url":    "http://music.163.com/api/cloudsearch/pc",
-		"params": map[string]interface{}{
-			"s":      keyword,
-			"type":   searchType,
-			"offset": 0,
-			"limit":  limit,
-		},
+	payload := map[string]interface{}{
+		"s":      keyword,
+		"type":   searchType,
+		"limit":  limit,
+		"total":  true,
+		"offset": 0,
 	}
-	eparamsJSON, _ := json.Marshal(eparams)
-	encryptedParam := EncryptLinux(string(eparamsJSON))
-	form := url.Values{}
-	form.Set("eparams", encryptedParam)
+	payloadBytes, _ := json.Marshal(payload)
+	params := EncryptEApi(SearchAPI, string(payloadBytes))
 
 	headers := []utils.RequestOption{
+		utils.WithHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36"),
 		utils.WithHeader("Referer", Referer),
+		utils.WithHeader("Origin", "https://music.163.com"),
 		utils.WithHeader("Content-Type", "application/x-www-form-urlencoded"),
 		utils.WithHeader("Cookie", n.cookie),
 		utils.WithRandomIPHeader(),
 	}
+
+	form := url.Values{}
+	form.Set("params", params)
 
 	return utils.Post(SearchAPI, strings.NewReader(form.Encode()), headers...)
 }

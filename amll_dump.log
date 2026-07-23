@@ -1,0 +1,5 @@
+=== RUN   TestDumpAMLLRaw
+    amll_dump_test.go:18: wrote 23857 bytes
+--- PASS: TestDumpAMLLRaw (1.10s)
+PASS
+ok  	sugarplayer/internal/music/lyrics	1.509s

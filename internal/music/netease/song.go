@@ -55,14 +55,8 @@ func (n *Netease) Search(keyword string) ([]model.Song, error) {
 	}
 
 	var songs []model.Song
-	isVip, _ := n.IsVipAccount()
 
 	for _, item := range resp.Result.Songs {
-		// Skip unavailable songs for non-VIP accounts.
-		if !isVip && item.Privilege.Fl == 0 {
-			continue
-		}
-
 		var size int64
 		// Prefer the highest available bitrate.
 		if item.Privilege.Fl >= 320000 && item.H.Size > 0 {

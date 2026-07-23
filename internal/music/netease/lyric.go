@@ -24,6 +24,12 @@ func (n *Netease) GetLyrics(s *model.Song) (string, error) {
 		songID = s.Extra["song_id"]
 	}
 
+	// Prefer the AMLL TTML database for high-quality timestamped lyrics,
+	// falling back to the platform API below on any miss.
+	if lrc, err := lyrics.FetchAMLLLyric("ncm", songID); err == nil && strings.TrimSpace(lrc) != "" {
+		return lrc, nil
+	}
+
 	reqData := map[string]interface{}{
 		"csrf_token": "",
 		"id":         songID,
