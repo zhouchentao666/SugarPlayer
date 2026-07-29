@@ -239,6 +239,16 @@ func (s *AudioServer) registerOnlineProxy() {
 			return
 		}
 
+		// Serve from local cache when available (range-aware); otherwise stream
+		// live from upstream and populate the cache in the background.
+		if onlineCacheEnabledNow() {
+			key := onlineCacheKey(source, id, quality, extraRaw)
+			if serveOnlineCache(w, r, key) {
+				return
+			}
+			go prefetchOnlineCache(key, source, downloadURL)
+		}
+
 		req, err := core.BuildSourceRequest("GET", downloadURL, source, r.Header.Get("Range"))
 		if err != nil {
 			http.Error(w, "failed to build request", http.StatusInternalServerError)

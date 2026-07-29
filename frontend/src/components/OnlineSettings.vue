@@ -7,6 +7,13 @@ import {
   QRLoginSources,
   CreateQRLogin,
   CheckQRLogin,
+  GetQZKey,
+  SetQZKey,
+  QZIsUnlocked,
+  GetOnlineCacheSize,
+  ClearOnlineCache,
+  SetOnlineCacheEnabled,
+  SetOnlineCacheMaxSize,
 } from '../../bindings/sugarplayer/app'
 import type { OnlineSource } from '../../bindings/sugarplayer/models'
 import type { AppSettings } from '../composables/useConfig'
@@ -29,6 +36,127 @@ const savedFlag = ref(false)
 let savedTimer: ReturnType<typeof setTimeout> | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
+// ---------- QZ 网关密钥 ----------
+const qzUnlocked = ref(false)
+const qzKeyInput = ref('')
+const qzKeyError = ref('')
+const qzSaving = ref(false)
+
+async function loadQZState() {
+  try {
+    qzUnlocked.value = await QZIsUnlocked()
+  } catch {
+    qzUnlocked.value = false
+  }
+  if (qzUnlocked.value) {
+    try {
+      qzKeyInput.value = await GetQZKey()
+    } catch {
+      qzKeyInput.value = ''
+    }
+  }
+}
+
+async function saveQZKey() {
+  if (!qzKeyInput.value.trim()) {
+    qzKeyError.value = '请输入 QZ 网关密钥'
+    return
+  }
+  qzSaving.value = true
+  qzKeyError.value = ''
+  try {
+    const ok = await SetQZKey(qzKeyInput.value.trim())
+    if (!ok) {
+      qzKeyError.value = '密钥不正确，请检查后重试'
+      qzUnlocked.value = false
+      qzSaving.value = false
+      return
+    }
+    qzUnlocked.value = true
+  } catch {
+    qzKeyError.value = '密钥校验失败'
+    qzSaving.value = false
+    return
+  }
+  qzSaving.value = false
+}
+
+async function clearQZKey() {
+  try {
+    await SetQZKey('')
+  } catch {
+    // 忽略失败
+  }
+  qzUnlocked.value = false
+  qzKeyInput.value = ''
+  qzKeyError.value = ''
+}
+
+// ---------- 在线音乐缓存 ----------
+const cacheSize = ref(0)
+const cacheSizeText = ref('0 B')
+const cacheMaxMB = ref(2048)
+const cacheClearing = ref(false)
+let cacheMaxTimer: ReturnType<typeof setTimeout> | null = null
+
+function formatBytes(n: number): string {
+  if (!n || n < 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let i = 0
+  let v = n
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024
+    i++
+  }
+  return `${v.toFixed(v >= 100 || i === 0 ? 0 : 1)} ${units[i]}`
+}
+
+async function loadCacheInfo() {
+  try {
+    cacheSize.value = await GetOnlineCacheSize()
+    cacheSizeText.value = formatBytes(cacheSize.value)
+  } catch {
+    cacheSize.value = 0
+    cacheSizeText.value = '0 B'
+  }
+}
+
+async function onCacheEnabledChange(value: boolean) {
+  emit('update:settings', { ...props.settings, onlineCacheEnabled: value })
+  try {
+    await SetOnlineCacheEnabled(value)
+  } catch {
+    // 忽略失败
+  }
+}
+
+function onCacheMaxInput() {
+  if (cacheMaxTimer) clearTimeout(cacheMaxTimer)
+  cacheMaxTimer = setTimeout(persistCacheMax, 500)
+}
+
+async function persistCacheMax() {
+  const mb = Math.max(0, Math.floor(Number(cacheMaxMB.value) || 0))
+  emit('update:settings', { ...props.settings, onlineCacheMaxSizeMB: mb })
+  try {
+    await SetOnlineCacheMaxSize(mb)
+  } catch {
+    // 忽略失败
+  }
+}
+
+async function clearOnlineCache() {
+  if (cacheClearing.value) return
+  cacheClearing.value = true
+  try {
+    await ClearOnlineCache()
+  } catch {
+    // 忽略失败
+  }
+  await loadCacheInfo()
+  cacheClearing.value = false
+}
+
 function statusOf(id: string): 'set' | 'empty' {
   return (cookies.value[id] || '').trim() ? 'set' : 'empty'
 }
@@ -50,11 +178,15 @@ onMounted(async () => {
   } catch {
     cookies.value = { ...(props.settings.platformCookies || {}) }
   }
+  await loadQZState()
+  cacheMaxMB.value = props.settings.onlineCacheMaxSizeMB ?? 2048
+  await loadCacheInfo()
 })
 
 onUnmounted(() => {
   if (savedTimer) clearTimeout(savedTimer)
   if (debounceTimer) clearTimeout(debounceTimer)
+  if (cacheMaxTimer) clearTimeout(cacheMaxTimer)
   stopQRPoll()
 })
 
@@ -284,6 +416,77 @@ function closeQR() {
           <ToggleSwitch
             :model-value="settings.autoSwitchInvalidSource"
             @update:model-value="onAutoSwitchChange"
+          />
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>QZ 网关（可选）</h2>
+          <span class="hint">输入 QZ 网关密钥后可解锁 QZ 解析加速通道，仅本地存储。未输入或密钥错误时，自动回退到内置音源正常播放。</span>
+        </div>
+
+        <div v-if="qzUnlocked" class="qz-unlocked">
+          <span class="qz-badge set">已启用</span>
+          <span class="qz-masked">{{ qzKeyInput ? qzKeyInput.replace(/./g, '•') : '' }}</span>
+          <span class="spacer"></span>
+          <button class="qr-btn" @click="clearQZKey">清除密钥</button>
+        </div>
+
+        <div v-else class="qz-locked">
+          <input
+            v-model="qzKeyInput"
+            class="cookie-input"
+            type="password"
+            rows="1"
+            placeholder="请输入 QZ 网关密钥"
+            @keydown.enter="saveQZKey"
+          />
+          <button class="qr-btn" :disabled="qzSaving" @click="saveQZKey">
+            {{ qzSaving ? '校验中…' : '保存密钥' }}
+          </button>
+          <span v-if="qzKeyError" class="qz-error">{{ qzKeyError }}</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>在线音乐缓存</h2>
+          <span class="hint">在线歌曲播放后会缓存到本地，再次播放无需联网。可设置最大缓存并随时清理，仅本地存储。</span>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-text">
+            <span class="switch-title">启用在线音乐缓存</span>
+            <span class="hint">关闭后将不再写入新缓存，已缓存文件仍保留在磁盘。</span>
+          </div>
+          <ToggleSwitch
+            :model-value="settings.onlineCacheEnabled"
+            @update:model-value="onCacheEnabledChange"
+          />
+        </div>
+
+        <div class="cache-row">
+          <div class="cache-meta">
+            <span class="cache-label">当前缓存占用</span>
+            <span class="cache-size">{{ cacheSizeText }}</span>
+          </div>
+          <button class="qr-btn" :disabled="cacheClearing" @click="clearOnlineCache">
+            {{ cacheClearing ? '清理中…' : '清除缓存' }}
+          </button>
+        </div>
+
+        <div class="cache-row">
+          <div class="cache-meta">
+            <span class="cache-label">最大缓存大小（MB，0 表示不限）</span>
+          </div>
+          <input
+            v-model.number="cacheMaxMB"
+            class="cookie-input cache-input"
+            type="number"
+            min="0"
+            step="100"
+            @input="onCacheMaxInput"
           />
         </div>
       </section>
@@ -628,4 +831,89 @@ function closeQR() {
   background: var(--fluent-bg-hover);
   border-color: var(--fluent-accent);
 }
+
+/* QZ 网关密钥 */
+.qz-unlocked {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qz-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.qz-badge.set {
+  background: rgba(46, 160, 67, 0.18);
+  color: #5fd17e;
+}
+
+.qz-masked {
+  font-size: 12px;
+  color: var(--fluent-text-secondary);
+  letter-spacing: 1px;
+}
+
+.qz-locked {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.qz-locked .cookie-input {
+  flex: 1;
+  min-width: 200px;
+  height: 30px;
+}
+
+.qz-locked .qr-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.qz-error {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #ff8080;
+}
+
+/* 在线音乐缓存 */
+.cache-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.cache-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.cache-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cache-size {
+  font-size: 13px;
+  color: var(--fluent-text-secondary);
+}
+
+.cache-input {
+  width: 140px;
+  height: 30px;
+  flex: none;
+}
+
+.cache-input:focus {
+  border-color: var(--fluent-accent);
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.2);
+}
+
 </style>

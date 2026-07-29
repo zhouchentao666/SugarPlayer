@@ -36,6 +36,7 @@ import { useDesktopLyric } from './composables/useDesktopLyric'
 import DesktopLyricApp from './DesktopLyricApp.vue'
 import PlayQueue from './components/player/PlayQueue.vue'
 import OnlineView from './components/OnlineView.vue'
+import DonateView from './components/DonateView.vue'
 import PlayerComments from './components/PlayerComments.vue'
 import AddToPlaylistDialog from './components/AddToPlaylistDialog.vue'
 import type { PlayMode } from './components/player/PlayerControls.vue'
@@ -44,7 +45,7 @@ import type { OnlineSong, OnlineCollection } from '../bindings/sugarplayer/model
 import type { SortMode, SortOrder } from './composables/usePlaylistView'
 import { localMetadata, type LocalSongMetadata } from './composables/useLocalMetadata'
 
-const view = ref<'main' | 'settings' | 'online' | 'online-discover' | 'onlinesettings'>('main')
+const view = ref<'main' | 'settings' | 'online' | 'online-discover' | 'onlinesettings' | 'donate'>('main')
 // 从侧栏点击固定歌单时，临时持有要打开的歌单，传给 OnlineView
 const pendingCollection = ref<OnlineCollection | null>(null)
 const isLoading = ref(true)
@@ -87,6 +88,8 @@ const settings = ref<AppSettings>({
   pinnedOnlinePlaylists: [],
   onlineSearchSources: [],
   onlineSearchHistory: [],
+  onlineCacheEnabled: true,
+  onlineCacheMaxSizeMB: 2048,
 })
 
 const playbackState = ref<ConfigPlayback>({
@@ -659,6 +662,7 @@ onUnmounted(() => {
         @open-search="view = 'online'"
         @open-discover="view = 'online-discover'"
         @open-online-settings="view = 'onlinesettings'"
+        @open-donate="view = 'donate'"
         @select="onSelectPlaylist"
         @drop-songs="handleDropSongs"
         @open-online-collection="openOnlineCollection"
@@ -717,6 +721,10 @@ onUnmounted(() => {
             :settings="settings"
             @update:settings="updateSettings"
             @close="view = 'main'"
+          />
+          <DonateView
+            v-else-if="view === 'donate'"
+            :key="'donate'"
           />
         </Transition>
       </main>

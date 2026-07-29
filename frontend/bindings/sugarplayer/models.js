@@ -116,6 +116,8 @@
  * @property {ConfigOnlineCollection[] | null} pinnedOnlinePlaylists
  * @property {string[] | null} onlineSearchSources
  * @property {string[] | null} onlineSearchHistory
+ * @property {boolean} onlineCacheEnabled
+ * @property {number} onlineCacheMaxSizeMB
  */
 
 /**

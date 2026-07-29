@@ -60,6 +60,14 @@ export function CheckUpdate() {
 }
 
 /**
+ * ClearOnlineCache removes all cached online music files.
+ * @returns {$CancellablePromise<void>}
+ */
+export function ClearOnlineCache() {
+    return $Call.ByID(1961482233);
+}
+
+/**
  * CloseDesktopLyric closes and destroys the desktop lyric window.
  * @returns {$CancellablePromise<void>}
  */
@@ -105,11 +113,36 @@ export function GetDesktopLyricConfig() {
 }
 
 /**
+ * GetDonateImageURLs returns the local server URLs for the donation QR codes.
+ * @returns {$CancellablePromise<{ [_ in string]?: string } | null>}
+ */
+export function GetDonateImageURLs() {
+    return $Call.ByID(4239093475);
+}
+
+/**
+ * GetOnlineCacheSize returns the current online music cache size in bytes.
+ * @returns {$CancellablePromise<number>}
+ */
+export function GetOnlineCacheSize() {
+    return $Call.ByID(2190754155);
+}
+
+/**
  * GetPlatformCookies returns the currently configured platform cookies.
  * @returns {$CancellablePromise<{ [_ in string]?: string } | null>}
  */
 export function GetPlatformCookies() {
     return $Call.ByID(568707775);
+}
+
+/**
+ * GetQZKey returns the currently stored QZ gateway key (empty if none). It is
+ * used by the UI to prefill the input field.
+ * @returns {$CancellablePromise<string>}
+ */
+export function GetQZKey() {
+    return $Call.ByID(682958143);
 }
 
 /**
@@ -333,6 +366,14 @@ export function QRLoginSources() {
 }
 
 /**
+ * QZIsUnlocked reports whether the QZ gateway is active (a valid key was set).
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function QZIsUnlocked() {
+    return $Call.ByID(4168453995);
+}
+
+/**
  * ReadAudioFile reads the raw bytes of an audio file.
  * @param {string} path
  * @returns {$CancellablePromise<string | null>}
@@ -426,6 +467,25 @@ export function SetDesktopLyricIgnoreMouseEvents(ignore) {
 }
 
 /**
+ * SetOnlineCacheEnabled toggles the online music cache at runtime. Persistence
+ * is handled by the frontend via SaveConfig.
+ * @param {boolean} enabled
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetOnlineCacheEnabled(enabled) {
+    return $Call.ByID(585181955, enabled);
+}
+
+/**
+ * SetOnlineCacheMaxSize sets the cache cap in megabytes (0 = unlimited).
+ * @param {number} maxMB
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetOnlineCacheMaxSize(maxMB) {
+    return $Call.ByID(3524945305, maxMB);
+}
+
+/**
  * SetPlatformCookies stores music-platform login cookies (the go-music-dl
  * "Cookies" feature) into the shared core cookie manager so that subsequent
  * searches / downloads / playback use the logged-in state. Persistence is
@@ -436,6 +496,17 @@ export function SetDesktopLyricIgnoreMouseEvents(ignore) {
  */
 export function SetPlatformCookies(cookies) {
     return $Call.ByID(524459155, cookies);
+}
+
+/**
+ * SetQZKey validates the user-provided QZ gateway key. On success the key is
+ * persisted locally and the QZ gateway is unlocked for playback / download; on
+ * failure the gateway stays locked and any previously stored key is cleared.
+ * @param {string} key
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function SetQZKey(key) {
+    return $Call.ByID(3476634715, key);
 }
 
 /**

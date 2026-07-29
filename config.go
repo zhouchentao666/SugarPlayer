@@ -104,6 +104,8 @@ type ConfigSettings struct {
 	PinnedOnlinePlaylists   []ConfigOnlineCollection       `json:"pinnedOnlinePlaylists"`
 	OnlineSearchSources     []string                       `json:"onlineSearchSources"`
 	OnlineSearchHistory     []string                       `json:"onlineSearchHistory"`
+	OnlineCacheEnabled      bool                           `json:"onlineCacheEnabled"`
+	OnlineCacheMaxSizeMB    int                            `json:"onlineCacheMaxSizeMB"`
 }
 
 // ConfigOnlineCollection is a pinned online playlist/album persisted to config.

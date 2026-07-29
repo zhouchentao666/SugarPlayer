@@ -30,6 +30,7 @@ import (
 	"sugarplayer/internal/music/netease"
 	"sugarplayer/internal/music/qianqian"
 	"sugarplayer/internal/music/qq"
+	"sugarplayer/internal/music/qzgw"
 	"sugarplayer/internal/music/soda"
 
 	"github.com/dhowden/tag"
@@ -432,13 +433,13 @@ func GetDownloadFunc(source string) func(*model.Song) (string, error) {
 	c := CM.Get(source)
 	switch source {
 	case "netease":
-		return qzOrFallback("netease", netease.New(c).GetDownloadURL)
+		return qzgw.QzOrFallback("netease", netease.New(c).GetDownloadURL)
 	case "qq":
-		return qzOrFallback("qq", qq.New(c).GetDownloadURL)
+		return qzgw.QzOrFallback("qq", qq.New(c).GetDownloadURL)
 	case "kugou":
-		return qzOrFallback("kugou", kugou.New(c).GetDownloadURL)
+		return qzgw.QzOrFallback("kugou", kugou.New(c).GetDownloadURL)
 	case "kuwo":
-		return qzOrFallback("kuwo", kuwo.New(c).GetDownloadURL)
+		return qzgw.QzOrFallback("kuwo", kuwo.New(c).GetDownloadURL)
 	case "migu":
 		return migu.New(c).GetDownloadURL
 	case "soda":

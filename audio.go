@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/base64"
 	"fmt"
 	"net"
@@ -11,6 +12,11 @@ import (
 
 	"go.senan.xyz/taglib"
 )
+
+// donateAssets embeds the donation QR codes so they ship inside the binary.
+//
+//go:embed assets/微信.jpg assets/支付宝.jpg
+var donateAssets embed.FS
 
 // AudioServer serves local audio files over HTTP so the WebView can stream them.
 type AudioServer struct {
@@ -52,9 +58,46 @@ func (s *AudioServer) start() {
 	s.server = &http.Server{Handler: mux}
 	s.registerOnlineProxy()
 	s.registerCoverProxy()
+	s.registerDonateProxy()
 	go func() {
 		_ = s.server.Serve(listener)
 	}()
+}
+
+// registerDonateProxy serves the embedded donation QR codes over the local
+// audio server so the sidebar can display them inside the WebView.
+func (s *AudioServer) registerDonateProxy() {
+	s.mux.HandleFunc("/donate", func(w http.ResponseWriter, r *http.Request) {
+		var file string
+		switch strings.TrimSpace(r.URL.Query().Get("name")) {
+		case "wechat":
+			file = "assets/微信.jpg"
+		case "alipay":
+			file = "assets/支付宝.jpg"
+		default:
+			http.NotFound(w, r)
+			return
+		}
+		data, err := donateAssets.ReadFile(file)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	})
+}
+
+// GetDonateImageURLs returns the local server URLs for the donation QR codes.
+func (a *App) GetDonateImageURLs() map[string]string {
+	base := fmt.Sprintf("http://127.0.0.1:%d", a.audio.port)
+	return map[string]string{
+		"wechat": base + "/donate?name=wechat",
+		"alipay": base + "/donate?name=alipay",
+	}
 }
 
 func isAudioFile(path string) bool {

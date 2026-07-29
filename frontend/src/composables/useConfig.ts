@@ -114,6 +114,8 @@ export interface AppSettings {
   pinnedOnlinePlaylists: OnlineCollection[]
   onlineSearchSources: string[]
   onlineSearchHistory: string[]
+  onlineCacheEnabled: boolean
+  onlineCacheMaxSizeMB: number
 }
 
 export interface ConfigPlayback {
@@ -230,6 +232,8 @@ export function useConfig(
           pinnedOnlinePlaylists: ((config.settings as unknown as Record<string, unknown>).pinnedOnlinePlaylists as OnlineCollection[]) ?? [],
           onlineSearchSources: ((config.settings as unknown as Record<string, unknown>).onlineSearchSources as string[]) ?? [],
           onlineSearchHistory: ((config.settings as unknown as Record<string, unknown>).onlineSearchHistory as string[]) ?? [],
+          onlineCacheEnabled: ((config.settings as unknown as Record<string, unknown>).onlineCacheEnabled as boolean) ?? true,
+          onlineCacheMaxSizeMB: ((config.settings as unknown as Record<string, unknown>).onlineCacheMaxSizeMB as number) ?? 2048,
         }
       }
       if (config.playback) {

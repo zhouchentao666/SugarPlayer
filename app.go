@@ -41,6 +41,8 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 	a.watcher = newFolderWatcher(a.app)
 	a.trayIcon = trayIconBytes
 	a.loadDownloadUnlock()
+	a.loadQZKey()
+	a.loadOnlineCacheConfig()
 
 	if win, ok := a.app.Window.GetByName("main"); ok {
 		a.mainWindow = win

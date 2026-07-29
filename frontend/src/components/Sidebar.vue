@@ -8,7 +8,7 @@ import PlaylistCreateInput from './sidebar/PlaylistCreateInput.vue'
 const props = defineProps<{
   playlists: Playlist[]
   selectedId: string
-  activeView?: 'main' | 'settings' | 'online' | 'online-discover' | 'onlinesettings'
+  activeView?: 'main' | 'settings' | 'online' | 'online-discover' | 'onlinesettings' | 'donate'
   pinnedCollections: OnlineCollection[]
 }>()
 
@@ -19,6 +19,7 @@ const emit = defineEmits<{
   (e: 'open-search'): void
   (e: 'open-discover'): void
   (e: 'open-online-settings'): void
+  (e: 'open-donate'): void
   (e: 'select', id: string): void
   (e: 'drop-songs', payload: { targetPlaylistId: string; sourcePlaylistId: string; songIds: string[] }): void
   (e: 'open-online-collection', collection: OnlineCollection): void
@@ -190,6 +191,14 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
       </ul>
     </div>
     <div class="bottom">
+      <button
+        class="settings-btn donate-btn"
+        :class="{ active: activeView === 'donate' }"
+        @click="emit('open-donate')"
+      >
+        <span class="icon">♥</span>
+        <span>赞助作者</span>
+      </button>
       <button
         :class="['settings-btn', { active: activeView === 'onlinesettings' }]"
         @click="emit('open-online-settings')"
@@ -429,5 +438,22 @@ function onDropSongs(playlistId: string, payload: { sourcePlaylistId: string; so
 .bottom {
   padding: 10px 12px;
   border-top: 1px solid var(--fluent-border);
+}
+
+/* 赞助作者 */
+.donate-btn {
+  color: #ff7a90;
+}
+
+.donate-btn:hover {
+  background: rgba(255, 122, 144, 0.14);
+}
+
+.donate-btn.active {
+  background: rgba(255, 122, 144, 0.18);
+}
+
+.donate-btn .icon {
+  color: #ff7a90;
 }
 </style>

@@ -36,6 +36,9 @@ export function OnlineSearch(keyword: string, sources: string[]): CancellablePro
 export function OnlineLyric(song: models.OnlineSong): CancellablePromise<string>;
 export function OnlineSources(): CancellablePromise<models.OnlineSource[]>;
 export function OnlineVerifyKey(key: string): CancellablePromise<boolean>;
+export function GetQZKey(): CancellablePromise<string>;
+export function QZIsUnlocked(): CancellablePromise<boolean>;
+export function SetQZKey(key: string): CancellablePromise<boolean>;
 export function OnlineIsUnlocked(): CancellablePromise<boolean>;
 export function OnlineDownload(song: models.OnlineSong, opts: models.OnlineDownloadOpts): CancellablePromise<models.OnlineDownloadResult>;
 export function GetPlatformCookies(): CancellablePromise<Record<string, string>>;
@@ -52,3 +55,8 @@ export function OnlineComments(song: models.OnlineSong, kind: string, page: numb
 export function OnlinePlaylistCategories(sources: string[]): CancellablePromise<models.OnlineCategorySource[]>;
 export function OnlineCategoryPlaylists(source: string, categoryID: string, categoryName: string): CancellablePromise<models.OnlineCollection[]>;
 export function OnlineQualityLevels(song: models.OnlineSong): CancellablePromise<string[]>;
+export function GetOnlineCacheSize(): CancellablePromise<number>;
+export function ClearOnlineCache(): CancellablePromise<void>;
+export function SetOnlineCacheEnabled(enabled: boolean): CancellablePromise<void>;
+export function SetOnlineCacheMaxSize(maxMB: number): CancellablePromise<void>;
+export function GetDonateImageURLs(): CancellablePromise<Record<string, string>>;

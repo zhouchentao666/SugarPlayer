@@ -76,6 +76,8 @@ export interface ConfigSettings {
   platformCookies: Record<string, string> | null;
   autoSwitchInvalidSource: boolean;
   pinnedOnlinePlaylists: OnlineCollection[] | null;
+  onlineCacheEnabled: boolean;
+  onlineCacheMaxSizeMB: number;
 }
 
 export interface UpdateInfo {
