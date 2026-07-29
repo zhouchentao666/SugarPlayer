@@ -27,6 +27,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Debug workspace layout
+        shell: bash
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "PWD=$(pwd)"
+          echo "=== repo root ==="
+          ls -la
+          echo "=== frontend dir? ==="
+          ls -la frontend 2>/dev/null || echo ">>> frontend NOT FOUND at repo root"
+          echo "=== src-tauri dir? ==="
+          ls -la src-tauri 2>/dev/null || echo ">>> src-tauri NOT FOUND"
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
