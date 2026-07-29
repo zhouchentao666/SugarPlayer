@@ -39,7 +39,7 @@ pub fn get_donate_image_urls(state: State<AudioPort>) -> HashMap<String, String>
 pub fn open_url(app: AppHandle, u: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
     app.opener()
-        .open_url(u, None::<&str>)
+        .open_url(u, None)
         .map_err(|e| e.to_string())
 }
 

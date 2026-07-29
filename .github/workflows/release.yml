@@ -67,10 +67,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # 只打包，不创建 GitHub Release
-          includeRelease: false
+          # 构建 release 包；只要不传 tagName/releaseName 就不会创建 GitHub Release
+          includeRelease: true
           projectPath: src-tauri
           args: ${{ matrix.args }}
+
+      - name: List bundle output (debug)
+        if: always()
+        shell: bash
+        run: |
+          echo "=== bundle dirs ==="
+          ls -R src-tauri/target/*/release/bundle 2>/dev/null || true
+          ls -R src-tauri/target/release/bundle 2>/dev/null || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
@@ -79,4 +87,4 @@ jobs:
           path: |
             src-tauri/target/*/release/bundle/**/*
             src-tauri/target/release/bundle/**/*
-          if-no-files-found: ignore
+          if-no-files-found: error
