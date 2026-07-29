@@ -5,7 +5,7 @@ import {
   ScanMusicFolder,
   WatchMusicFolder,
   ReadMetadata,
-} from '../tauri/app'
+} from '../../bindings/sugarplayer/app'
 import { type Playlist, type Song } from '../types'
 
 export function usePlaylists() {

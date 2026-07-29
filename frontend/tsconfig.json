@@ -16,12 +16,17 @@
       "DOM"
     ],
     "skipLibCheck": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@wailsio/runtime": ["node_modules/@wailsio/runtime/types/index.d.ts"]
+    }
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
-    "src/**/*.vue"
+    "src/**/*.vue",
+    "bindings/**/*.ts",
+    "bindings/**/*.d.ts"
   ],
   "references": [
     {

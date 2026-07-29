@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { GetDonateImageURLs } from '../tauri/app'
+import { GetDonateImageURLs } from '../../bindings/sugarplayer/app'
 
 const urls = ref<{ wechat: string; alipay: string }>({ wechat: '', alipay: '' })
 const loaded = ref(false)

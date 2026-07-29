@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, watch, nextTick } from 'vue'
 import type { Song } from '../types'
-import { OpenImageFile, ReadImageFile, ReadLyrics } from '../tauri/app'
+import { OpenImageFile, ReadImageFile, ReadLyrics } from '../../bindings/sugarplayer/app'
 import { localMetadata, setLocalMetadata } from '../composables/useLocalMetadata'
 
 const props = defineProps<{

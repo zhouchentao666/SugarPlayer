@@ -1,102 +1,323 @@
-name: Build
+name: Release
 
 on:
   push:
+    tags:
+      - 'v*.*.*'
     branches:
-      - "main"
+      - main
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 0.1.0)'
+        required: true
+        default: '0.1.0'
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=4096
+  CGO_ENABLED: 1
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-            args: ""
-          - platform: ubuntu-22.04
-            args: ""
-          - platform: macos-latest
-            args: "--target universal-apple-darwin"
-
-    runs-on: ${{ matrix.platform }}
+  # ---------------------------------------------------------------------------
+  # Windows: 安装版 (NSIS) + 便捷版 (exe)
+  # ---------------------------------------------------------------------------
+  build-windows:
+    name: Build Windows
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
-      - name: Debug workspace layout
-        shell: bash
+      - name: Clone local dependencies
+        shell: pwsh
         run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "PWD=$(pwd)"
-          echo "=== repo root ==="
-          ls -la
-          echo "=== frontend dir? ==="
-          ls -la frontend 2>/dev/null || echo ">>> frontend NOT FOUND at repo root"
-          echo "=== src-tauri dir? ==="
-          ls -la src-tauri 2>/dev/null || echo ">>> src-tauri NOT FOUND"
+          cd ..
+          git clone --depth 1 https://github.com/guohuiyuan/go-music-dl.git go-music-dl-main
+          git clone --depth 1 https://github.com/guohuiyuan/music-lib.git music-lib-local
 
-      - name: Setup Node
-        uses: actions/setup-node@v7
+      - uses: actions/setup-go@v5
         with:
-          node-version: 22
+          go-version: '1.24'
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-      # macOS universal 二进制需要同时安装两个架构的 Rust target
-      - name: Add macOS universal Rust targets
-        if: matrix.platform == 'macos-latest'
-        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
-
-      - name: Install Linux build dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Build Frontend
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libsoup-3.0-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libssl-dev
+          cd frontend
+          npm install
+          npm run build
 
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
+      - name: Install Wails v3 CLI
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm install
+      - name: Add Go bin to PATH
+        run: echo "$env:GOPATH\bin" | Out-File -Append $env:GITHUB_PATH
+        shell: pwsh
 
-      - name: Build and release (Tauri)
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # 构建 release 包；只要不传 tagName/releaseName 就不会创建 GitHub Release
-          includeRelease: true
-          projectPath: src-tauri
-          args: ${{ matrix.args }}
+      - name: Check Wails version
+        run: wails3 version
 
-      - name: List bundle output (debug)
-        if: always()
-        shell: bash
+      - name: Install NSIS
+        run: choco install nsis -y
+        shell: pwsh
+
+      - name: Compute version
+        id: ver
+        shell: pwsh
         run: |
-          echo "=== bundle dirs ==="
-          ls -R src-tauri/target/*/release/bundle 2>/dev/null || true
-          ls -R src-tauri/target/release/bundle 2>/dev/null || true
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') { $v = '${{ github.event.inputs.version }}' }
+          else { $v = '${{ github.ref_name }}'.TrimStart('v') }
+          echo "VERSION=$v" >> $env:GITHUB_OUTPUT
+          echo "VERSION_FULL=$v.0" >> $env:GITHUB_OUTPUT
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v7
+      - name: Sync version into sources
+        shell: pwsh
+        run: |
+          $full = '${{ steps.ver.outputs.VERSION_FULL }}'
+          $short = '${{ steps.ver.outputs.VERSION }}'
+          (Get-Content wails.json) -replace '(?m)("productVersion":\s*)"[^"]*"', "`${1}`"$full`"" | Set-Content -Encoding utf8 wails.json
+          (Get-Content build/windows/info.json) -replace '(?m)("file_version":\s*)"[^"]*"', "`${1}`"$full`"" | Set-Content -Encoding utf8 build/windows/info.json
+          (Get-Content build/windows/info.json) -replace '(?m)("ProductVersion":\s*)"[^"]*"', "`${1}`"$full`"" | Set-Content -Encoding utf8 build/windows/info.json
+          $main = Get-Content main.go -Raw
+          $main = $main -replace '(return\s+")\d+\.\d+\.\d+(")', "`${1}$short`${2}"
+          $main | Set-Content -Encoding utf8 main.go
+
+      - name: Build (installer + portable exe)
+        run: |
+          $env:PATH += ";C:\Program Files (x86)\NSIS"
+          wails3 task windows:package
+        shell: pwsh
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: sugarplayer-${{ matrix.platform }}
+          name: windows
           path: |
-            src-tauri/target/*/release/bundle/**/*
-            src-tauri/target/release/bundle/**/*
-          if-no-files-found: error
+            bin/sugarplayer.exe
+            build/bin/sugarplayer-amd64-installer.exe
+
+  # ---------------------------------------------------------------------------
+  # macOS: .app 打包为 zip（adhoc 签名）
+  # ---------------------------------------------------------------------------
+  build-macos:
+    name: Build macOS
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone local dependencies
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/guohuiyuan/go-music-dl.git go-music-dl-main
+          git clone --depth 1 https://github.com/guohuiyuan/music-lib.git music-lib-local
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Install Wails v3 CLI
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Check Wails version
+        run: wails3 version
+
+      - name: Fix Mac actool & clean syso
+        run: |
+          xcode-select --install 2>/dev/null || true
+          rm -f *.syso
+
+      - name: Compute version
+        id: ver
+        run: |
+          if [ '${{ github.event_name }}' = 'workflow_dispatch' ]; then v='${{ github.event.inputs.version }}'; else v="${GITHUB_REF_NAME#v}"; fi
+          echo "VERSION=$v" >> "$GITHUB_OUTPUT"
+          echo "VERSION_FULL=$v.0" >> "$GITHUB_OUTPUT"
+
+      - name: Sync version into sources
+        run: |
+          full='${{ steps.ver.outputs.VERSION_FULL }}'
+          short='${{ steps.ver.outputs.VERSION }}'
+          perl -i -pe "s/(\"productVersion\":\s*)\"[^\"]*\"/\$1\"$full\"/" wails.json
+          perl -i -pe "s/(\"file_version\":\s*)\"[^\"]*\"/\$1\"$full\"/" build/windows/info.json
+          perl -i -pe "s/(\"ProductVersion\":\s*)\"[^\"]*\"/\$1\"$full\"/" build/windows/info.json
+          perl -i -pe 's/(return\s+")\d+\.\d+\.\d+(")/$1'"$short"'$2/' main.go
+
+      - name: Build .app
+        run: wails3 task darwin:package
+
+      - name: Zip .app
+        run: ditto -c -k --sequesterForSecurity --keepParent bin/sugarplayer.app bin/sugarplayer-macos.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: bin/sugarplayer-macos.zip
+
+  # ---------------------------------------------------------------------------
+  # Linux: 二进制 tarball + 尝试 AppImage
+  # ---------------------------------------------------------------------------
+  build-linux:
+    name: Build Linux
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone local dependencies
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/guohuiyuan/go-music-dl.git go-music-dl-main
+          git clone --depth 1 https://github.com/guohuiyuan/music-lib.git music-lib-local
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Install Wails v3 CLI
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@latest
+
+      - name: Add Go bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Check Wails version
+        run: wails3 version
+
+      - name: Install Linux GTK WebKit Deps
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential pkg-config libgtk-4-dev libwebkitgtk-6.0-4 || true
+          sudo apt install -y libwebkitgtk-6.0-dev || true
+          sudo apt install -y libwebkit2gtk-4.1-dev || true
+
+      - name: Compute version
+        id: ver
+        run: |
+          if [ '${{ github.event_name }}' = 'workflow_dispatch' ]; then v='${{ github.event.inputs.version }}'; else v="${GITHUB_REF_NAME#v}"; fi
+          echo "VERSION=$v" >> "$GITHUB_OUTPUT"
+          echo "VERSION_FULL=$v.0" >> "$GITHUB_OUTPUT"
+
+      - name: Sync version into sources
+        run: |
+          full='${{ steps.ver.outputs.VERSION_FULL }}'
+          short='${{ steps.ver.outputs.VERSION }}'
+          perl -i -pe "s/(\"productVersion\":\s*)\"[^\"]*\"/\$1\"$full\"/" wails.json
+          perl -i -pe "s/(\"file_version\":\s*)\"[^\"]*\"/\$1\"$full\"/" build/windows/info.json
+          perl -i -pe "s/(\"ProductVersion\":\s*)\"[^\"]*\"/\$1\"$full\"/" build/windows/info.json
+          perl -i -pe 's/(return\s+")\d+\.\d+\.\d+(")/$1'"$short"'$2/' main.go
+
+      - name: Build binary
+        run: wails3 task linux:build
+
+      - name: Try build AppImage
+        continue-on-error: true
+        run: wails3 task linux:create:appimage
+
+      - name: Package tarball
+        run: tar -czf bin/sugarplayer-linux-amd64.tar.gz -C bin sugarplayer
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: bin/sugarplayer-linux-amd64.tar.gz
+
+      - name: Upload AppImage (if built)
+        if: hashFiles('bin/*.AppImage') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: bin/*.AppImage
+
+  # ---------------------------------------------------------------------------
+  # 发布到 GitHub Releases
+  # ---------------------------------------------------------------------------
+  release:
+    name: Publish Release
+    needs: [build-windows, build-macos, build-linux]
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Version
+        id: ver
+        run: |
+          if [ '${{ github.event_name }}' = 'workflow_dispatch' ]; then v='${{ github.event.inputs.version }}'; else v="${GITHUB_REF_NAME#v}"; fi
+          echo "VERSION=$v" >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
+          name: SugarPlayer v${{ steps.ver.outputs.VERSION }}
+          body: |
+            ## SugarPlayer v${{ steps.ver.outputs.VERSION }}
+
+            ### 下载
+            - **Windows 安装版**：`sugarplayer-amd64-installer.exe`（推荐，含 WebView2 引导）
+            - **Windows 便捷版**：`sugarplayer.exe`（解压即用）
+            - **macOS**：`sugarplayer-macos.zip`（解压后拖入应用程序，未公证需自行授权）
+            - **Linux**：`sugarplayer-linux-amd64.tar.gz`（或 `*.AppImage`）
+
+            ### 蓝奏云
+            https://wwazq.lanzoub.com/b00odsy2kd　密码：`1234`
+
+            ### 腾讯频道
+            https://pd.qq.com/s/yr6zo0yh
+          files: dist/**/*
+
+  # ---------------------------------------------------------------------------
+  # 部署官网到 GitHub Pages（Web/ 目录）
+  # ---------------------------------------------------------------------------
+  deploy-pages:
+    name: Deploy Website
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-${{ github.run_attempt }}
+          path: Web
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}

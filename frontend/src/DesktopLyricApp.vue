@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { Events } from './tauri/runtime'
-import { GetDesktopLyricConfig } from './tauri/app'
+import { Events } from '@wailsio/runtime'
+import { GetDesktopLyricConfig } from '../bindings/sugarplayer/app'
 import DesktopLyricControls from './components/desktopLyric/DesktopLyricControls.vue'
 import DesktopLyricLine from './components/desktopLyric/DesktopLyricLine.vue'
 import { useDesktopLyricRenderer } from './composables/useDesktopLyricRenderer'
@@ -120,7 +120,6 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="desktop-lyric"
-    data-tauri-drag-region
     :class="{
       locked: config.isLock,
       hovered: isHovered,
@@ -139,7 +138,6 @@ onBeforeUnmount(() => {
     />
     <div
       class="lyric-container"
-      data-tauri-drag-region
       :class="[config.position]"
       :style="{
         fontSize: config.fontSize + 'px',
@@ -172,6 +170,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100vh;
   color: #fff;
+  /* Wails v3 内置默认拖拽变量 */
+  --wails-draggable: drag;
   /* 极浅透明底色，阻断系统点击穿透，肉眼几乎看不见 */
   background: rgba(0, 0, 0, 0.005);
   padding: 12px;
@@ -197,6 +197,8 @@ onBeforeUnmount(() => {
   position: relative;
   padding: 0 8px;
   overflow: hidden;
+  /* 歌词内容区域也能拖动 */
+  --wails-draggable: drag;
 }
 .lyric-container.center :deep(.dl-line) {
   text-align: center;

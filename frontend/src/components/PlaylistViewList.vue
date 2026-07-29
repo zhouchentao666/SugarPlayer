@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Playlist, Song } from '../types'
 import type { SortMode } from '../composables/usePlaylistView'
-import { OpenInExplorer, OpenSongEditor } from '../tauri/app'
+import { OpenInExplorer, OpenSongEditor } from '../../bindings/sugarplayer/app'
 import {
   displayTitle,
   displayArtist,

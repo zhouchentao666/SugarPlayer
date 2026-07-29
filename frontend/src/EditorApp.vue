@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue'
-import { Events, Window } from './tauri/runtime'
-import { LoadConfig, SaveConfig, ReadMetadata, ReadLyrics, OpenImageFile, ReadImageFile, EmitMetadataChanged } from './tauri/app'
+import { Events, Window } from '@wailsio/runtime'
+import { LoadConfig, SaveConfig, ReadMetadata, ReadLyrics, OpenImageFile, ReadImageFile, EmitMetadataChanged } from '../bindings/sugarplayer/app'
+import type { AppConfig } from '../bindings/sugarplayer/models'
 import { localMetadata, type LocalSongMetadata } from './composables/useLocalMetadata'
 import type { Song, SongMetadata } from './types'
 
@@ -160,7 +161,7 @@ async function save() {
 
   try {
     const config = await LoadConfig()
-    const appConfig = {
+    const appConfig: AppConfig = {
       playlists: (config.playlists as any) ?? null,
       settings: {
         ...(config.settings as any),

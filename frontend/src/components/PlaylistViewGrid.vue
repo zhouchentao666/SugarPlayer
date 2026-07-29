@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import { ReadCoverArt } from '../tauri/app'
+import { ReadCoverArt } from '../../bindings/sugarplayer/app'
 import type { Song } from '../types'
 import {
   displayTitle,

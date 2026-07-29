@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Events } from '../../tauri/runtime'
-import { SetDesktopLyricBounds } from '../../tauri/app'
+import { Events } from '@wailsio/runtime'
+import { SetDesktopLyricBounds } from '../../../bindings/sugarplayer/app'
 import type { DesktopLyricConfig } from '../../composables/useConfig'
 import SettingRow from './SettingRow.vue'
 import ToggleSwitch from './ToggleSwitch.vue'

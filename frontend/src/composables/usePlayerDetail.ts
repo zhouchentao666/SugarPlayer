@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref, unref, type MaybeRef } from 'vue'
-import { Window, Application } from '../tauri/runtime'
+import { Window, Application } from '@wailsio/runtime'
 import { staggerPhase } from './useSharedTransition'
 
 const STAGGER_DELAYS = [0.45, 0.6, 0.8] // phase 1/2/3 的延迟系数（相对 500ms）

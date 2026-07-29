@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import { Window, System } from '../tauri/runtime'
+import { Window, System } from '@wailsio/runtime'
 
 const emit = defineEmits<{
   close: []
@@ -34,9 +34,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="title-bar" data-tauri-drag-region @dblclick="toggleMaximise">
-    <div class="title" data-tauri-drag-region>SugarMusic</div>
-    <div class="drag-region" data-tauri-drag-region></div>
+  <div class="title-bar" @dblclick="toggleMaximise">
+    <div class="title">SugarMusic</div>
+    <div class="drag-region"></div>
     <div class="window-controls">
       <button class="control-btn" @click="minimise" @dblclick.stop>
         <svg viewBox="0 0 12 12" width="12" height="12">

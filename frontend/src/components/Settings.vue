@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import { Version } from '../tauri/app'
+import { Version } from '../../bindings/sugarplayer/app'
 import { type AppSettings, HOTKEY_ACTIONS, type HotkeyAction, type DesktopLyricConfig } from '../composables/useConfig'
 import SettingCard from './settings/SettingCard.vue'
 import SettingRow from './settings/SettingRow.vue'
@@ -11,13 +11,17 @@ import WindowEffectSettings from './settings/WindowEffectSettings.vue'
 import HotkeyInput from './settings/HotkeyInput.vue'
 import DesktopLyricSettings from './settings/DesktopLyricSettings.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   settings: AppSettings
-}>()
+  updateState?: 'idle' | 'checking' | 'latest' | 'error'
+}>(), {
+  updateState: 'idle',
+})
 
 const emit = defineEmits<{
   (e: 'update:settings', settings: AppSettings): void
   (e: 'close'): void
+  (e: 'check-update'): void
 }>()
 
 const appVersion = ref('')
@@ -58,6 +62,16 @@ const themes = [
   { value: 'dark', label: '深色' },
 ] as const
 
+const qualities = [
+  { value: 'standard', label: '标准 (128k)' },
+  { value: 'exhigh', label: '极高 (320k)' },
+  { value: 'lossless', label: '无损 (FLAC)' },
+  { value: 'hires', label: 'Hi-Res' },
+  { value: 'jymaster', label: '超清母带' },
+  { value: 'jyeffect', label: '沉浸环绕声' },
+  { value: 'sky', label: '臻品全景声' },
+] as const
+
 const accentColors = ['#0078d4', '#107c10', '#ff8c00', '#d13438', '#881798', '#00b7c3']
 
 const fullScreenBackgrounds = [
@@ -70,6 +84,11 @@ const coverTransitions = [
   { value: 'slide-left', label: '左边滑入滑出' },
   { value: 'slide-both', label: '左右滑入滑出' },
 ] as const
+
+function handleQualityChange(event: Event) {
+  const value = (event.target as HTMLSelectElement).value as AppSettings['quality']
+  update({ quality: value })
+}
 </script>
 
 <template>
@@ -97,6 +116,11 @@ const coverTransitions = [
       </SettingCard>
 
       <SettingCard title="播放">
+        <SettingRow label="默认音质" description="在线播放时的首选音质">
+          <select :value="settings.quality" class="fluent-select" @change="handleQualityChange">
+            <option v-for="q in qualities" :key="q.value" :value="q.value">{{ q.label }}</option>
+          </select>
+        </SettingRow>
         <SettingRow label="打开后自动播放音乐" description="启动应用后自动继续播放">
           <ToggleSwitch
             :model-value="settings.autoplay"
@@ -188,6 +212,36 @@ const coverTransitions = [
           @update:config="updateDesktopLyric"
           @update:enabled="updateDesktopLyricEnabled"
         />
+      </SettingCard>
+
+      <SettingCard title="更新">
+        <SettingRow label="启动时检查更新" description="每次启动应用时自动检查是否有新版本">
+          <ToggleSwitch
+            :model-value="settings.checkUpdateOnStartup"
+            @update:model-value="value => update({ checkUpdateOnStartup: value })"
+          />
+        </SettingRow>
+        <SettingRow label="检查更新" description="立即检查是否有新版本；有新版本才会弹窗提示">
+          <div class="update-check">
+            <span
+              v-if="props.updateState === 'latest'"
+              class="update-status latest"
+            >已是最新版本</span>
+            <span
+              v-else-if="props.updateState === 'error'"
+              class="update-status error"
+            >检查失败，请重试</span>
+            <button
+              class="fluent-btn"
+              :disabled="props.updateState === 'checking'"
+              @click="emit('check-update')"
+            >
+              {{ props.updateState === 'checking'
+                ? '检查中…'
+                : (props.updateState === 'latest' || props.updateState === 'error' ? '重新检查' : '立即检查') }}
+            </button>
+          </div>
+        </SettingRow>
       </SettingCard>
 
       <SettingCard title="关于">

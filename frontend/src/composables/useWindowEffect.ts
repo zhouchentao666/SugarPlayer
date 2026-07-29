@@ -1,5 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, watch, type Ref } from 'vue'
-import { ReadImageFile } from '../tauri/app'
+import { ReadImageFile } from '../../bindings/sugarplayer/app'
 import { useDominantColors } from './useDominantColors'
 import type { AppSettings } from './useConfig'
 
