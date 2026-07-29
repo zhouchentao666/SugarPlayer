@@ -25,10 +25,10 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -70,11 +70,10 @@ jobs:
           # 只打包，不创建 GitHub Release
           includeRelease: false
           projectPath: src-tauri
-          frontendDist: ../frontend/dist
           args: ${{ matrix.args }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sugarplayer-${{ matrix.platform }}
           path: |
