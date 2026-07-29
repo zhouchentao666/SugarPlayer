@@ -557,7 +557,8 @@ export function ToggleDesktopLyric(enabled) {
 }
 
 /**
- * Version returns the current application version.
+ * Version returns the current application version, read from wails.json so it
+ * stays in sync with the packaged binary version.
  * @returns {$CancellablePromise<string>}
  */
 export function Version() {
