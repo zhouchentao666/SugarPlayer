@@ -1,4 +1,4 @@
-import { Events } from '@wailsio/runtime'
+import { Events } from '../tauri/runtime'
 import { ref, watch, type Ref } from 'vue'
 import type { LyricLine } from '@applemusic-like-lyrics/core'
 import type { Song } from '../types'

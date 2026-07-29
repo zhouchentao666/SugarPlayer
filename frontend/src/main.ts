@@ -1,4 +1,3 @@
-import '@wailsio/runtime'
 import { createApp } from 'vue'
 import App from './App.vue'
 import EditorApp from './EditorApp.vue'

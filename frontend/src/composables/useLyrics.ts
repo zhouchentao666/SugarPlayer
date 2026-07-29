@@ -1,7 +1,7 @@
 import { ref, watch, type Ref } from 'vue'
 import type { LyricLine } from '@applemusic-like-lyrics/core'
 import { parseLrc, parseLrcA2, parseYrc, parseQrc, parseEslrc, parseTTML } from '@applemusic-like-lyrics/lyric'
-import { ReadLyrics, OnlineLyric } from '../../bindings/sugarplayer/app'
+import { ReadLyrics } from '../tauri/app'
 import {
   convertLrcFormat,
   isA2Format,
@@ -12,7 +12,6 @@ import {
   sanitizeLyricLines,
 } from '../utils/lyricConverter'
 import { localMetadata } from './useLocalMetadata'
-import { currentOnlineSong } from './onlineState'
 
 export type { LyricLine }
 
@@ -97,27 +96,6 @@ export function useLyrics(currentSong: Ref<{ path: string } | null>) {
     if (!path) {
       lyrics.value = []
       hasLyrics.value = false
-      return
-    }
-
-    // Online songs are streamed by URL (or stored with the online:// scheme for
-    // favorited songs); resolve lyrics through the music source.
-    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('online://')) {
-      const song = currentOnlineSong.value
-      if (!song) {
-        lyrics.value = []
-        hasLyrics.value = false
-        return
-      }
-      const lrc = await OnlineLyric(song).catch(() => '')
-      if (!lrc) {
-        lyrics.value = []
-        hasLyrics.value = false
-        return
-      }
-      const parsed = parseLyric(lrc)
-      lyrics.value = parsed
-      hasLyrics.value = parsed.length > 0
       return
     }
 

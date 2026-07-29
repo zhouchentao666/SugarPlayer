@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { OpenImageFile } from '../../../bindings/sugarplayer/app'
+import { OpenImageFile } from '../../tauri/app'
 import type { AppSettings, WindowEffect } from '../../composables/useConfig'
 import SettingCard from './SettingCard.vue'
 import SettingRow from './SettingRow.vue'

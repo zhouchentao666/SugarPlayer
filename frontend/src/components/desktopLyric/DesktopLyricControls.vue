@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Events } from '@wailsio/runtime'
+import { Events } from '../../tauri/runtime'
 
 const props = defineProps<{
   songName: string

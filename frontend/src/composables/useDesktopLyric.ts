@@ -1,6 +1,6 @@
-import { Events } from '@wailsio/runtime'
+import { Events } from '../tauri/runtime'
 import { watch, type Ref } from 'vue'
-import { ToggleDesktopLyric, CloseDesktopLyric } from '../../bindings/sugarplayer/app'
+import { ToggleDesktopLyric, CloseDesktopLyric } from '../tauri/app'
 import type { AppSettings } from './useConfig'
 
 export interface UseDesktopLyricOptions {

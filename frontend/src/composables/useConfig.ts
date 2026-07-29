@@ -1,6 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
-import { SaveConfig, LoadConfig } from '../../bindings/sugarplayer/app'
-import type { OnlineCollection } from '../../bindings/sugarplayer/models'
+import { SaveConfig, LoadConfig } from '../tauri/app'
 import { type Playlist } from '../types'
 import type { SortMode, SortOrder } from './usePlaylistView'
 import type { LocalSongMetadata } from './useLocalMetadata'
@@ -82,12 +81,9 @@ export const DEFAULT_DESKTOP_LYRIC: DesktopLyricConfig = {
   isLock: false,
 }
 
-export type QualityLevel = 'standard' | 'exhigh' | 'lossless' | 'hires' | 'jymaster' | 'jyeffect' | 'sky'
-
 export interface AppSettings {
   theme: 'system' | 'light' | 'dark'
   accentColor: string
-  quality: QualityLevel
   autoplay: boolean
   savePlaylistAndSong: boolean
   saveWindowPosition: boolean
@@ -101,7 +97,6 @@ export interface AppSettings {
   coverTransition: CoverTransition
   immersivePlayerBar: boolean
   hotkeys: Partial<Record<HotkeyAction, string>>
-  checkUpdateOnStartup: boolean
   autoStart: boolean
   trayEnabled: boolean
   closeToTray: boolean
@@ -109,13 +104,6 @@ export interface AppSettings {
   selectedPlaylistId: string
   playlistSorts: Record<string, PlaylistSort>
   localMetadata: Record<string, LocalSongMetadata>
-  platformCookies: Record<string, string>
-  autoSwitchInvalidSource: boolean
-  pinnedOnlinePlaylists: OnlineCollection[]
-  onlineSearchSources: string[]
-  onlineSearchHistory: string[]
-  onlineCacheEnabled: boolean
-  onlineCacheMaxSizeMB: number
 }
 
 export interface ConfigPlayback {
@@ -184,28 +172,15 @@ export function useConfig(
   async function load() {
     try {
       const config = await LoadConfig()
+      if (!config || typeof config !== 'object') return
       if (config.playlists && config.playlists.length > 0) {
         playlists.value = config.playlists as Playlist[]
       }
       if (config.settings) {
         const hasEffect = Boolean(config.settings.windowEffect)
-        // 音质映射：将旧版 'high' 映射到新版 'exhigh'
-        const rawQuality = config.settings.quality as string
-        const qualityMap: Record<string, QualityLevel> = {
-          'standard': 'standard',
-          'high': 'exhigh',
-          'exhigh': 'exhigh',
-          'lossless': 'lossless',
-          'hires': 'hires',
-          'jymaster': 'jymaster',
-          'jyeffect': 'jyeffect',
-          'sky': 'sky',
-        }
-        const mappedQuality = qualityMap[rawQuality] || 'standard'
         settings.value = {
           theme: (config.settings.theme as AppSettings['theme']) || 'system',
           accentColor: config.settings.accentColor || '#0078d4',
-          quality: mappedQuality,
           autoplay: config.settings.autoplay ?? false,
           savePlaylistAndSong: config.settings.savePlaylistAndSong ?? true,
           saveWindowPosition: config.settings.saveWindowPosition ?? true,
@@ -219,7 +194,6 @@ export function useConfig(
           coverTransition: ((config.settings as unknown as Record<string, unknown>).coverTransition as CoverTransition) || 'fade',
           immersivePlayerBar: config.settings.immersivePlayerBar ?? false,
           hotkeys: ((config.settings as unknown as Record<string, unknown>).hotkeys as Record<string, string>) || { ...DEFAULT_HOTKEYS },
-          checkUpdateOnStartup: ((config.settings as unknown as Record<string, unknown>).checkUpdateOnStartup as boolean) ?? true,
           autoStart: ((config.settings as unknown as Record<string, unknown>).autoStart as boolean) ?? false,
           trayEnabled: ((config.settings as unknown as Record<string, unknown>).trayEnabled as boolean) ?? false,
           closeToTray: ((config.settings as unknown as Record<string, unknown>).closeToTray as boolean) ?? false,
@@ -227,13 +201,6 @@ export function useConfig(
           selectedPlaylistId: config.settings.selectedPlaylistId ?? '',
           playlistSorts: (config.settings.playlistSorts as Record<string, PlaylistSort>) ?? {},
           localMetadata: (config.settings.localMetadata as Record<string, LocalSongMetadata>) ?? {},
-          platformCookies: ((config.settings as unknown as Record<string, unknown>).platformCookies as Record<string, string>) ?? {},
-          autoSwitchInvalidSource: ((config.settings as unknown as Record<string, unknown>).autoSwitchInvalidSource as boolean) ?? true,
-          pinnedOnlinePlaylists: ((config.settings as unknown as Record<string, unknown>).pinnedOnlinePlaylists as OnlineCollection[]) ?? [],
-          onlineSearchSources: ((config.settings as unknown as Record<string, unknown>).onlineSearchSources as string[]) ?? [],
-          onlineSearchHistory: ((config.settings as unknown as Record<string, unknown>).onlineSearchHistory as string[]) ?? [],
-          onlineCacheEnabled: ((config.settings as unknown as Record<string, unknown>).onlineCacheEnabled as boolean) ?? true,
-          onlineCacheMaxSizeMB: ((config.settings as unknown as Record<string, unknown>).onlineCacheMaxSizeMB as number) ?? 2048,
         }
       }
       if (config.playback) {

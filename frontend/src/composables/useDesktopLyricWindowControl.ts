@@ -1,5 +1,5 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { SetDesktopLyricBounds, SetDesktopLyricIgnoreMouseEvents } from '../../bindings/sugarplayer/app'
+import { SetDesktopLyricBounds, SetDesktopLyricIgnoreMouseEvents } from '../tauri/app'
 import type { DesktopLyricConfig } from './useConfig'
 
 const RESIZE_BORDER = 10

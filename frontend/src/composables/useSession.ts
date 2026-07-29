@@ -1,5 +1,5 @@
 import { nextTick, type Ref } from 'vue'
-import { Window, Application } from '@wailsio/runtime'
+import { Window, Application } from '../tauri/runtime'
 import type { AppSettings, ConfigPlayback, ConfigWindow } from './useConfig'
 import type { Playlist } from '../types'
 import type { useAudioPlayer } from './useAudioPlayer'

@@ -1,15 +1,13 @@
 <script lang="ts" setup>
 import { type Song } from '../types'
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import ProgressBar from './player/ProgressBar.vue'
 import SongInfo from './player/SongInfo.vue'
 import PlayerControls, { type PlayMode } from './player/PlayerControls.vue'
 import VolumeControl from './player/VolumeControl.vue'
 import PlaybackRateControl from './player/PlaybackRateControl.vue'
-import { OnlineQualityLevels } from '../../bindings/sugarplayer/app'
-import type { OnlineSong } from '../../bindings/sugarplayer/models'
 
-const props = defineProps<{
+defineProps<{
   currentSong: Song | null
   coverUrl: string | null
   isPlaying: boolean
@@ -21,8 +19,6 @@ const props = defineProps<{
   playMode: PlayMode
   immersive?: boolean
   desktopLyricEnabled?: boolean
-  currentOnlineSong: OnlineSong | null
-  commentsOpen?: boolean
 }>()
 
 const isHovered = ref(false)
@@ -38,105 +34,7 @@ const emit = defineEmits<{
   (e: 'cycle-mode'): void
   (e: 'toggle-queue'): void
   (e: 'toggle-desktop-lyric'): void
-  (e: 'toggle-comments'): void
-  (e: 'quality-change', quality: string): void
 }>()
-
-const QUALITY_LABELS: Record<string, string> = {
-  standard: '标准',
-  exhigh: '极高',
-  lossless: '无损',
-  hires: 'Hi-Res',
-  jymaster: '超清母带',
-  jyeffect: '沉浸声',
-  sky: '全景声',
-  master: '母带',
-  atmos: '全景声',
-  flac: '无损',
-  '640': '640K',
-  '320': '320K',
-  '128': '128K',
-}
-
-function qualityLabel(q: string): string {
-  return QUALITY_LABELS[q] || q
-}
-
-// 网易云 / QQ / 酷狗 / 酷我 支持音质切换（普通-无损-母带）
-const showQuality = computed(() => {
-  const s = props.currentOnlineSong
-  return !!s && (s.source === 'netease' || s.source === 'qq' || s.source === 'kugou' || s.source === 'kuwo')
-})
-
-const qualityLevels = ref<string[]>([])
-const qualityOpen = ref(false)
-const qualityBtnRef = ref<HTMLElement | null>(null)
-const popStyle = ref<Record<string, string>>({})
-
-const currentQuality = computed(() => {
-  const s = props.currentOnlineSong
-  if (!s || !s.extra) return ''
-  try {
-    const obj = JSON.parse(s.extra) as Record<string, string>
-    return obj['quality'] || ''
-  } catch {
-    return ''
-  }
-})
-
-const qualityTitle = computed(() => {
-  const q = currentQuality.value
-  return q ? `音质：${qualityLabel(q)}（点击切换）` : '切换音质'
-})
-
-const qualityButtonText = computed(() => {
-  const q = currentQuality.value
-  return q ? qualityLabel(q) : '音质'
-})
-
-async function toggleQuality() {
-  if (!props.currentOnlineSong) return
-  if (qualityOpen.value) {
-    qualityOpen.value = false
-    return
-  }
-  try {
-    const levels = await OnlineQualityLevels(props.currentOnlineSong)
-    qualityLevels.value = levels || []
-  } catch {
-    qualityLevels.value = []
-  }
-  qualityOpen.value = true
-  requestAnimationFrame(positionPopover)
-}
-
-function positionPopover() {
-  const btn = qualityBtnRef.value
-  if (!btn) return
-  const rect = btn.getBoundingClientRect()
-  popStyle.value = {
-    position: 'fixed',
-    right: `${window.innerWidth - rect.right}px`,
-    bottom: `${window.innerHeight - rect.top + 8}px`,
-  }
-}
-
-function selectQuality(q: string) {
-  qualityOpen.value = false
-  emit('quality-change', q)
-}
-
-function onDocClick() {
-  if (qualityOpen.value) qualityOpen.value = false
-}
-
-onMounted(() => {
-  document.addEventListener('click', onDocClick)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
-})
 
 function formatDuration(seconds: number): string {
   if (!seconds || seconds < 0) return '0:00'
@@ -182,43 +80,6 @@ function formatDuration(seconds: number): string {
 
       <div class="section right" :class="{ faded: immersive && !isHovered }">
         <span class="time-label">{{ formatDuration(currentTime) }} / {{ formatDuration(duration || 0) }}</span>
-        <button
-          v-if="showQuality"
-          ref="qualityBtnRef"
-          class="side-btn quality-btn"
-          :class="{ active: qualityOpen }"
-          :title="qualityTitle"
-          @click.stop="toggleQuality"
-        >
-          {{ qualityButtonText }}
-        </button>
-        <Teleport to="body">
-          <div
-            v-if="qualityOpen && qualityLevels.length"
-            class="quality-pop"
-            :style="popStyle"
-            @click.stop
-          >
-            <div
-              v-for="q in qualityLevels"
-              :key="q"
-              class="quality-item"
-              :class="{ active: q === currentQuality }"
-              @click="selectQuality(q)"
-            >{{ qualityLabel(q) }}</div>
-          </div>
-        </Teleport>
-        <button
-          v-if="currentOnlineSong"
-          class="side-btn comment-btn"
-          :class="{ active: commentsOpen }"
-          title="评论"
-          @click="emit('toggle-comments')"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-          </svg>
-        </button>
         <button
           class="side-btn lyric-btn"
           :class="{ active: desktopLyricEnabled }"

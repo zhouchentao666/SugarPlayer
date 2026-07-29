@@ -1,9 +1,28 @@
-build/bin
-bin/
-node_modules
-frontend/dist
-.task/
-.trae/
+# Dependencies
+/node_modules
+/frontend/node_modules
 
-# 闭源 QZ 网关（api.qz.shiqianjiang.cn），不含在开源仓库中
-internal/music/qzgw/
+# Rust / Tauri
+/src-tauri/target
+/target
+
+# Frontend build output
+/frontend/dist
+
+# Wails legacy artifacts (being replaced by Tauri)
+/bin
+/build/bin
+*.syso
+sugarplayer.exe
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
